@@ -1,0 +1,62 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+import { getAccess } from "@/features/auth/access";
+import { validateCredentials } from "@/features/auth/validation";
+import { createClient } from "@/lib/supabase/server";
+
+export type AuthFormState = { error: string | null };
+
+export async function login(_previousState: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const credentials = validateCredentials(formData);
+  if ("error" in credentials) return { error: credentials.error };
+
+  const supabase = await createClient();
+  try {
+    const { error } = await supabase.auth.signInWithPassword(credentials);
+    if (error) {
+      if (error.status === 429) return { error: "Too many sign-in attempts. Please try again later." };
+      if (!error.status || error.status >= 500) {
+        return { error: "Sign-in is temporarily unavailable. Please try again." };
+      }
+      return { error: "Unable to sign in. Check your email and password and confirm your account is enabled." };
+    }
+
+    const access = await getAccess(supabase);
+    if (access.status !== "authorized") {
+      // Discard the newly created session when application authorization fails.
+      const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+      if (signOutError) return { error: "Access was denied. Session cleanup failed; please try signing out again." };
+      return {
+        error: access.status === "unavailable"
+          ? "Unable to verify your profile. Please try again."
+          : "Your account does not have active CYCLO access. Contact your administrator.",
+      };
+    }
+  } catch {
+    return { error: "Sign-in is temporarily unavailable. Please try again." };
+  }
+
+  // Redirect throws internally, so keep it outside the error handler.
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
+}
+
+export async function logout(): Promise<void> {
+  const supabase = await createClient();
+  // Logout must also work for a session whose profile has just been deactivated.
+  // It exposes no data and needs no application role.
+  let failed = false;
+  try {
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    failed = Boolean(error);
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect("/login?error=logout_failed");
+
+  revalidatePath("/", "layout");
+  redirect("/login");
+}
