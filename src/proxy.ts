@@ -13,8 +13,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimisation)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
-     * - common static asset extensions
+     * Do not exclude arbitrary file extensions: future application routes
+     * and API endpoints must stay protected regardless of their names.
      */
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico$|sitemap\\.xml$|robots\\.txt$).*)",
   ],
 };
