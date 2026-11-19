@@ -1,0 +1,67 @@
+# Dependencies and package manager caches
+node_modules/
+.pnpm-store/
+
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.cjs
+
+# Next.js
+.next/
+out/
+build/
+dist/
+coverage/
+next-env.d.ts
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel/
+
+# Credentials and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Testing
+playwright-report/
+test-results/
+.nyc_output/
+
+# Local databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.bak
+
+# AI coding tools - local state
+.claude/settings.local.json
