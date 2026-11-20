@@ -12,7 +12,11 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:db": "npx --yes supabase@3.2.0 test db",
+    "test:integration": "node --env-file=.env.supabase-local --test tests/integration/*.local.mjs",
+    "db:types": "node scripts/gen-db-types.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

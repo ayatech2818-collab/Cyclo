@@ -55,6 +55,10 @@ Runtime requests require these values for the existing SSR proxy. The build does
 | `pnpm typecheck` | Run TypeScript without emitting files |
 | `pnpm build` | Create the production build and check types |
 | `pnpm start` | Serve the production build after `pnpm build` |
+| `pnpm test` | Unit tests (mocked Supabase) |
+| `pnpm test:db` | pgTAP database tests against the **local** Supabase stack (rolled back) |
+| `pnpm test:integration` | HTTP tests against the **local** stack; first run `npx supabase status -o env > .env.supabase-local` |
+| `pnpm db:types` | Regenerate `src/types/database.ts` from the **local** schema |
 
 Next.js 16 runs lint separately from its build. Run both before handing off changes.
 
