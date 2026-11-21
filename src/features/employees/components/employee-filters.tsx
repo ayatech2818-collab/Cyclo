@@ -51,11 +51,11 @@ export function EmployeeFilters({ query }: { query: EmployeeDirectoryQuery }) {
       {query.pageSize !== DEFAULT_PAGE_SIZE && <input type="hidden" name="size" value={query.pageSize} />}
 
       <div className="flex gap-2">
-        <button type="submit" className="h-10 flex-1 rounded-md bg-primary px-4 text-sm font-medium text-surface hover:bg-primary-hover sm:flex-none">
+        <button type="submit" className="h-10 flex-1 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover sm:flex-none">
           Apply
         </button>
         {hasActiveFilters(query) && (
-          <Link href="/employees" className="inline-flex h-10 items-center rounded-md border border-border bg-surface px-4 text-sm font-medium text-text-primary hover:bg-background">
+          <Link href="/employees" className="inline-flex h-10 items-center rounded-md border border-border bg-surface px-4 text-sm font-medium text-text-primary hover:bg-surface-muted">
             Clear
           </Link>
         )}

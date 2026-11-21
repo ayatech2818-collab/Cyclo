@@ -1,13 +1,13 @@
 # Employee Management — Implementation Progress
 
-Branch: `feature/employee-management` · Hosted project: `Cyclo` (`jbcvznfxycngysxwtbsz`)
+Branch: `feature/employee-management-actions` · Hosted project: `Cyclo` (`jbcvznfxycngysxwtbsz`)
 
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 1 | Inspect architecture, migrations, live schema; identify DB changes | **Done** (2026-11-20) |
 | 2 | Secure read RPCs, DTOs, queries, column-grant narrowing | **Done locally** (2026-11-20); hosted apply pending approval |
 | 3 | Employee directory UI (`/employees`, `/employees/[id]`) | **Done locally** (2026-11-21) |
-| 4 | Admin mutations + audit log | Pending |
+| 4 | Admin mutations + audit log | **Done locally** (2026-11-21); hosted deployment remains unapproved |
 | 5 | Invitations, invite callback, onboarding + guard | Pending |
 | 6 | Self-profile + avatar storage | Pending |
 | 7 | Full verification + final report | Pending |
@@ -198,3 +198,69 @@ Phase 3 (directory UI) builds on `queries.server.ts`. Still open from Phase 1: m
 - The seeded local Super Admin (`admin@cyclo.test`) cannot be deleted while it is the only active local Super Admin. That is the last-admin protection working as designed.
 - An *unknown but well-formed* employee id for an authorized viewer still returns 404 content with a streamed 200 status, because the lookup happens below the loading boundary. No data is exposed.
 - No edit actions yet; the "View" action is the only row action until Phase 4.
+
+
+---
+
+## Phase 4 — Employee management actions
+
+Implemented locally on 2026-11-21, on the existing feature/employee-management-actions branch at e88777a. Local history was inspected; remote GitHub DNS was unavailable during inspection. The user approved proceeding from this branch. No reset, commit, push, or merge was performed.
+
+### Database
+
+- New migration: supabase/migrations/20261121042440_employee_admin_mutations_audit.sql. Created with the pinned Supabase CLI; only this migration was applied to the local 127.0.0.1:54322 stack. No existing migration was edited.
+- New RPCs (public SECURITY INVOKER wrappers with private SECURITY DEFINER implementations): admin_update_employee_details, admin_set_employee_code, admin_set_employee_role, admin_set_employee_active, admin_set_git_organizer.
+- Private helper lock_employee_admin_target derives identity through the existing auth.uid() bridge, locks actor/target in UUID order, and re-reads active Super Admin authorization after acquiring the locks. Its EXECUTE is not granted to authenticated users.
+- Reuses cyclo_employee_api (NOLOGIN, no BYPASSRLS), existing SELECT policy, empty search_path, schema-qualified objects, explicit return columns and the existing ownership-transfer pattern. Adds only column UPDATE grants for the six Phase 4 fields and a dedicated owner-role UPDATE policy. No new direct privileges for authenticated users.
+- Self-demotion and self-deactivation fail in both server mutations and database RPCs. A second active admin can manage the first. The existing last-admin trigger and counter are unchanged. Concurrent cross-admin demotion allows one winner; the other caller is then forbidden.
+- Full names are trimmed and limited to 200 characters. Avatar URLs require HTTPS and are limited to 2048 characters. Codes are trimmed, blank becomes NULL, length is limited to 32, existing accepted characters and case-sensitive uniqueness are preserved. A database enum validates roles; NULL booleans/roles are rejected.
+- Each mutation returns the existing safe admin detail projection. Email, invited_by and onboarded_at are never updated. Reactivation changes only is_active.
+
+### Audit design
+
+private.employee_audit_log contains UUID id, actor_id, target_employee_id, constrained action, old_values/new_values JSON objects and a database timestamp. Identity always comes from the authenticated session. The API owner can INSERT only the five payload columns, with an actor-identity RLS check; ordinary API roles cannot read, insert, update, delete or truncate the audit table. The API owner cannot update/delete audit records either.
+
+Audits and mutations share one transaction; an audit failure rolls back the profile change. No-op requests skip both UPDATE and audit insertion. Payloads contain only operation-relevant fields. Profile audits store full_name and avatar_url_sha256 rather than raw avatar URLs, preventing signed URL tokens or URL credentials from being copied into history. Other actions store only employee_code, role, is_active or is_git_organizer. UUIDs deliberately have no cascading profile foreign keys, preserving history after disposable test accounts are removed. No audit history UI or directory exposure was added.
+
+### Application and UI files
+
+| File | Change |
+| --- | --- |
+| src/features/employees/mutation-validation.ts | Runtime validation and normalization |
+| src/features/employees/mutations.server.ts | Five typed server-only mutations using the caller's SSR Supabase session; role checks, self restrictions and strict DTO parsing |
+| src/features/employees/actions.ts | Five Server Actions; field allowlists, safe feedback and list/detail route revalidation |
+| src/features/employees/errors.ts | Duplicate code, self-management, last-admin and missing-target errors; no raw PostgreSQL messages shown |
+| src/features/employees/components/employee-management.tsx | Responsive admin forms, native confirmation dialogs, pending/feedback states and duplicate-submit guard |
+| src/app/(dashboard)/employees/[id]/page.tsx | Mounts management controls only in the Super Admin DTO branch |
+| src/types/database.ts | Regenerated from local Supabase |
+| supabase/tests/database/employee_mutations.test.sql | 75 transactional pgTAP assertions |
+| tests/employee-mutations.test.mjs | 22 additional application tests |
+| tests/integration/employee-mutations.local.mjs | Six additional loopback-only Auth/PostgREST tests |
+
+Project Managers continue receiving only directory fields. Developers still receive a 404 for employee administration pages. Directory layout, search, role/status filters and pagination were preserved; no list RPC or DTO was widened for Git Organizer.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| pnpm lint | Pass |
+| pnpm typecheck | Pass |
+| pnpm test | 65/65 pass, zero skipped |
+| pnpm test:db | 128/128 pass across two files: 53 existing + 75 Phase 4 |
+| pnpm test:integration | 13/13 pass: seven existing + six Phase 4 |
+| pnpm build | Pass, with local Supabase environment overrides |
+| Local db lint | No schema errors |
+| Local security advisors (warning/error level) | No issues |
+| Final migration transactional replay | All statements succeeded; replay rolled back without data loss |
+| git diff --check | Pass |
+
+Coverage includes all five mutation endpoints for anonymous/developer/PM/inactive-admin callers, spoofed actor/extra-column attempts, direct-table RLS, invalid input, duplicate codes, self restrictions, last-admin trigger preservation, successful/no-op/failed audits, forced audit failure rollback, constrained audit actions, audit access denial, avatar audit redaction, unchanged read behavior, second-admin management and concurrent cross-admin demotion. Application coverage includes mutation/action success and errors, revalidation, DTO allowlists, actual page visibility by role, confirmation cancellation, pending feedback and duplicate submission prevention. Existing tests were not weakened or modified.
+
+Browser checks against a production local build verified admin controls, code persistence and success feedback, duplicate-code feedback, role/deactivation confirmations with Cancel initially focused, deactivation/reactivation and self restrictions. A narrow mobile viewport had equal document/client widths, with no horizontal overflow. Two disposable browser users were removed after testing; the original 28 local profiles remain and the admin counter is consistent. Audit records from local integration/browser fixtures intentionally remain.
+
+### Scope and remaining decisions
+
+- Hosted Supabase was never accessed or modified. No hosted configuration, onboarding, invitation or profile/storage work was performed.
+- Docker access required execution outside the sandbox; it was resolved for the local stack. No database work remains blocked.
+- Hosted migration history/deployment strategy and the future onboarding rule remain unresolved as previously documented. No Phase 5 work was started.
+- All Phase 4 work remains uncommitted. Temporary verification files and the local preview server are removed/stopped before handoff. Existing Node module-type warnings remain informational and unchanged.

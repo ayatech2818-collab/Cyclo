@@ -115,19 +115,23 @@ These tests use mocked Auth/database responses and simulated SSR cookie refreshe
 
 ## Design system
 
-`src/app/globals.css` defines Tailwind v4 `@theme` variables. Use semantic utilities such as `bg-background`, `bg-surface`, `text-text-primary`, `text-text-secondary`, `border-border`, `bg-primary`, and `hover:bg-primary-hover`.
+`src/app/globals.css` defines the colour tokens once per theme as CSS variables and maps them to Tailwind utilities with `@theme inline`. Always use the semantic utilities (`bg-background`, `bg-surface`, `bg-surface-muted`, `text-text-primary`, `text-text-secondary`, `text-text-muted`, `border-border`, `border-border-strong`, `bg-primary`, `text-primary-foreground`, `hover:bg-primary-hover`, `ring-ring`, `text-success|warning|danger`) so components work in both themes without `dark:` variants. Put `text-primary-foreground` on primary fills, never `text-white`.
 
-| Token | Value |
-| --- | --- |
-| Primary / hover | `#2563EB` / `#1D4ED8` |
-| Background / surface | `#F8FAFC` / `#FFFFFF` |
-| Primary / secondary text | `#172033` / `#64748B` |
-| Border | `#E2E8F0` |
-| Success | `#0D9488` |
-| Warning | `#D97706` |
-| Danger | `#DC2626` |
+| Token | Light | Dark |
+| --- | --- | --- |
+| Background / surface / surface-muted | `#F6F7F9` / `#FFFFFF` / `#F1F3F6` | `#0A0C10` / `#12151B` / `#191D25` |
+| Border / border-strong | `#E3E6EB` / `#CBD2DC` | `#262B35` / `#353C49` |
+| Text primary / secondary / muted | `#0F172A` / `#475569` / `#64748B` | `#E8EBF0` / `#A1A9B8` / `#7F8899` |
+| Primary / hover / foreground | `#4F46E5` / `#4338CA` / `#FFFFFF` | `#8B8CF8` / `#A5A6FB` / `#0A0C10` |
+| Success / warning / danger | `#047857` / `#B45309` / `#DC2626` | `#34D399` / `#FBBF24` / `#F87171` |
+| Danger hover / foreground (destructive buttons) | `#B91C1C` / `#FFFFFF` | `#FCA5A5` / `#0A0C10` |
+| Brand gradient (login panel) | `#312E81` → `#4338CA` → `#6D28D9` | `#1E1B4B` → `#312E81` → `#4C1D95` |
 
-The theme uses a system font stack, a 4px spacing unit, shared corner radii, and a subtle small shadow. Global defaults provide light colors, readable line height, and visible keyboard focus. Standard Tailwind responsive breakpoints remain available. No font downloads or component framework are required.
+Every text/background pair meets WCAG 2.1 AA (4.5:1) in both themes.
+
+**Light and dark mode.** The theme is **System** by default (follows the operating system through `prefers-color-scheme`, pure CSS). Users can force Light or Dark with the toggle on the login page and in the app header; the choice is stored in the non-sensitive `cyclo-theme` cookie and rendered by the server as `<html data-theme>`, so the first paint is already correct (no flash, no inline script). Code: `src/lib/theme` and `src/components/theme/theme-toggle.tsx`. The explicit and system dark palettes are duplicated in CSS and kept identical by `tests/theme.test.mjs`.
+
+The theme uses a system font stack, a 4px spacing unit, shared corner radii, small and large shadows tuned per theme, visible keyboard focus rings, and honours `prefers-reduced-motion`. No font downloads or component framework are required.
 
 Use the shared class helper when combining conditional or overridable classes:
 

@@ -39,6 +39,31 @@ isOneToOne: false
               "avatar_url": string,"created_at": string,"email": string,"employee_code": string,"full_name": string,"id": string,"invited_by": string,"invited_by_name": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
             }[]
                            },
+"admin_set_employee_active":
+{ Args: { "p_employee_id": string,"p_is_active": boolean }; Returns: {
+              "avatar_url": string,"created_at": string,"email": string,"employee_code": string,"full_name": string,"id": string,"invited_by": string,"invited_by_name": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
+            }[]
+                           },
+"admin_set_employee_code":
+{ Args: { "p_employee_code": string,"p_employee_id": string }; Returns: {
+              "avatar_url": string,"created_at": string,"email": string,"employee_code": string,"full_name": string,"id": string,"invited_by": string,"invited_by_name": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
+            }[]
+                           },
+"admin_set_employee_role":
+{ Args: { "p_employee_id": string,"p_role": Database["public"]['Enums']["app_role"] }; Returns: {
+              "avatar_url": string,"created_at": string,"email": string,"employee_code": string,"full_name": string,"id": string,"invited_by": string,"invited_by_name": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
+            }[]
+                           },
+"admin_set_git_organizer":
+{ Args: { "p_employee_id": string,"p_is_git_organizer": boolean }; Returns: {
+              "avatar_url": string,"created_at": string,"email": string,"employee_code": string,"full_name": string,"id": string,"invited_by": string,"invited_by_name": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
+            }[]
+                           },
+"admin_update_employee_details":
+{ Args: { "p_avatar_url": string,"p_employee_id": string,"p_full_name": string }; Returns: {
+              "avatar_url": string,"created_at": string,"email": string,"employee_code": string,"full_name": string,"id": string,"invited_by": string,"invited_by_name": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
+            }[]
+                           },
 "get_employee":
 { Args: { "p_employee_id": string }; Returns: {
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"]

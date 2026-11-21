@@ -11,7 +11,7 @@ function Code({ value }: { value: string | null }) {
 }
 
 function YouTag({ show }: { show: boolean }) {
-  return show ? <span className="ml-2 rounded bg-background px-1.5 py-0.5 text-[11px] font-medium text-text-secondary">You</span> : null;
+  return show ? <span className="ml-2 rounded bg-surface-muted px-1.5 py-0.5 text-[11px] font-medium text-text-secondary">You</span> : null;
 }
 
 /**
@@ -25,7 +25,7 @@ export function EmployeeTable({ employees, currentUserId }: { employees: Employe
       <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface shadow-sm md:block">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Employees</caption>
-          <thead className="border-b border-border bg-background/60 text-xs font-medium text-text-secondary">
+          <thead className="border-b border-border bg-surface-muted text-xs font-medium text-text-secondary">
             <tr>
               <th scope="col" className="px-4 py-3 font-medium">Employee</th>
               <th scope="col" className="px-4 py-3 font-medium">Employee code</th>
@@ -38,7 +38,7 @@ export function EmployeeTable({ employees, currentUserId }: { employees: Employe
             {employees.map((employee) => {
               const name = displayName(employee.fullName, employee.email);
               return (
-                <tr key={employee.id} className="hover:bg-background/60">
+                <tr key={employee.id} className="hover:bg-surface-muted/60">
                   <td className="px-4 py-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <EmployeeAvatar fullName={employee.fullName} email={employee.email} avatarUrl={employee.avatarUrl} />

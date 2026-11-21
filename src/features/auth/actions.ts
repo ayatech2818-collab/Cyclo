@@ -7,9 +7,20 @@ import { getAccess } from "@/features/auth/access";
 import { validateCredentials } from "@/features/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
-export type AuthFormState = { error: string | null };
+/** `email` echoes the submitted address (never the password) so a failed attempt keeps it in the form. */
+export type AuthFormState = { error: string | null; email?: string };
 
 export async function login(_previousState: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const result = await signIn(formData);
+  return { ...result, email: submittedEmail(formData) };
+}
+
+function submittedEmail(formData: FormData): string {
+  const value = formData.get("email");
+  return typeof value === "string" ? value.trim().slice(0, 254) : "";
+}
+
+async function signIn(formData: FormData): Promise<{ error: string | null }> {
   const credentials = validateCredentials(formData);
   if ("error" in credentials) return { error: credentials.error };
 

@@ -10,6 +10,7 @@ import { EMPLOYEE_ERROR_MESSAGES } from "@/features/employees/errors";
 import { loadForPage } from "@/features/employees/page-errors.server";
 import { adminGetEmployee, getEmployee } from "@/features/employees/queries.server";
 import { canViewDirectory, isUuid } from "@/features/employees/validation";
+import { EmployeeManagement } from "@/features/employees/components/employee-management";
 
 // Employee names are never placed in tab titles or browser history. Unauthorized
 // roles get the same title as any missing page.
@@ -65,6 +66,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
         <EmployeeDirectoryFields employee={employee} />
         {result.data.admin && <EmployeeAdminFields employee={result.data.admin} />}
       </div>
+      {result.data.admin && <EmployeeManagement employee={result.data.admin} isSelf={employee.id === profile.id} />}
     </main>
   );
 }
