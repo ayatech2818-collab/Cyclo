@@ -16,7 +16,9 @@
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:db": "npx --yes supabase@3.2.0 test db",
     "test:integration": "node --env-file=.env.supabase-local --test tests/integration/*.local.mjs",
-    "db:types": "node scripts/gen-db-types.mjs"
+    "db:types": "node scripts/gen-db-types.mjs",
+    "db:seed:local": "node --env-file=.env.supabase-local scripts/seed-local-employees.mjs",
+    "dev:local": "node --env-file=.env.supabase-local scripts/dev-local.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

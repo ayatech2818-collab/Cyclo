@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cyclo-local",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--env-file=.env.supabase-local", "scripts/dev-local.mjs", "3100", "--prod"],
+      "port": 3100
+    }
+  ]
+}

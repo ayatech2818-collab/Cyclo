@@ -59,6 +59,8 @@ Runtime requests require these values for the existing SSR proxy. The build does
 | `pnpm test:db` | pgTAP database tests against the **local** Supabase stack (rolled back) |
 | `pnpm test:integration` | HTTP tests against the **local** stack; first run `npx supabase status -o env > .env.supabase-local` |
 | `pnpm db:types` | Regenerate `src/types/database.ts` from the **local** schema |
+| `pnpm db:seed:local` | Seed demo employees into the **local** stack; role logins are written to the gitignored `.env.seed-local` |
+| `pnpm dev:local [port] [--prod]` | Run the app against the **local** stack without editing `.env.local` (`--prod` builds and runs `next start`) |
 
 Next.js 16 runs lint separately from its build. Run both before handing off changes.
 

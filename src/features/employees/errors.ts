@@ -33,6 +33,21 @@ export const EMPLOYEE_ERROR_MESSAGES: Record<EmployeeErrorCode, string> = {
 
 type DatabaseErrorLike = { code?: string | null; message?: string | null };
 
+const MISSING_FUNCTION_CODES = new Set(["PGRST202", "42883"]);
+
+/**
+ * One-line, server-side diagnostic for a failed employee RPC. Contains only
+ * the operation name and the SQLSTATE/PostgREST code: never user input, rows
+ * or raw database messages. A plain string so every logger renders it.
+ */
+export function describeDatabaseFailure(operation: string, error: DatabaseErrorLike | null | undefined): string {
+  const code = error?.code || "unknown";
+  const hint = MISSING_FUNCTION_CODES.has(code)
+    ? " (database function not found: apply the employee migrations to the database this app is connected to)"
+    : "";
+  return `[employees] ${operation} failed: code=${code}${hint}`;
+}
+
 /** Maps a PostgREST/Postgres error from the employee RPCs to a safe application code. */
 export function mapDatabaseError(error: DatabaseErrorLike | null | undefined): EmployeeErrorCode {
   if (!error) return "unexpected";
@@ -45,6 +60,9 @@ export function mapDatabaseError(error: DatabaseErrorLike | null | undefined): E
     case "PGRST301": // JWT could not be verified
     case "PGRST302":
       return "unauthenticated";
+    case "PGRST202": // RPC not found in the schema cache (migration not applied)
+    case "42883": // undefined_function
+      return "unavailable";
     case "08000":
     case "08003":
     case "08006":

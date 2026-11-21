@@ -1,6 +1,6 @@
 import type { AppRole } from "@/features/auth/access";
 
-import { APP_ROLES, type EmployeeDirectoryQuery, type EmployeeStatusFilter } from "./types";
+import { APP_ROLES, DIRECTORY_ROLES, type EmployeeDirectoryQuery, type EmployeeStatusFilter } from "./types";
 
 // Must stay within the bounds enforced by public.list_employees.
 export const SEARCH_MAX_LENGTH = 100;
@@ -18,6 +18,11 @@ function single(value: string | string[] | undefined): string | undefined {
 
 export function isAppRole(value: unknown): value is AppRole {
   return typeof value === "string" && (APP_ROLES as readonly string[]).includes(value);
+}
+
+/** UI gate only; the database enforces the same rule on every directory RPC. */
+export function canViewDirectory(role: AppRole): boolean {
+  return (DIRECTORY_ROLES as readonly AppRole[]).includes(role);
 }
 
 export function isUuid(value: unknown): value is string {
@@ -59,6 +64,16 @@ export function parseDirectoryQuery(params: SearchParams): EmployeeDirectoryQuer
     page,
     pageSize: (PAGE_SIZE_OPTIONS as readonly number[]).includes(sizeParam) ? sizeParam : DEFAULT_PAGE_SIZE,
   };
+}
+
+export function hasActiveFilters(query: EmployeeDirectoryQuery): boolean {
+  return Boolean(query.search || query.role || query.status !== "all");
+}
+
+/** Directory URL for the given query with optional overrides (e.g. another page). */
+export function directoryHref(query: EmployeeDirectoryQuery, overrides: Partial<EmployeeDirectoryQuery> = {}): string {
+  const params = directoryQueryToParams({ ...query, ...overrides }).toString();
+  return params ? `/employees?${params}` : "/employees";
 }
 
 /** Serializes a query back to URL params, omitting defaults. */

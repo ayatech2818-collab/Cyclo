@@ -5,7 +5,7 @@ import { requireActiveProfile } from "@/features/auth/server";
 import { createClient } from "@/lib/supabase/server";
 
 import { toAdminDetail, toDirectoryItem, toOwnProfile, totalCount } from "./dto";
-import { EmployeeError, mapDatabaseError } from "./errors";
+import { EmployeeError, describeDatabaseFailure, mapDatabaseError } from "./errors";
 import {
   DIRECTORY_ROLES,
   type EmployeeAdminDetail,
@@ -28,9 +28,8 @@ type RpcError = { code?: string | null; message?: string | null };
 
 function fail(operation: string, error: RpcError): never {
   const code = mapDatabaseError(error);
-  // Log only the operation and SQLSTATE: no user input, rows or raw messages.
   if (code === "unexpected" || code === "unavailable") {
-    console.error(`[employees] ${operation} failed`, { sqlstate: error.code ?? "unknown" });
+    console.error(describeDatabaseFailure(operation, error));
   }
   throw new EmployeeError(code);
 }

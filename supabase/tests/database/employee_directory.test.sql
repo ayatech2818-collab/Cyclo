@@ -26,18 +26,22 @@ insert into t_users (key, id) values
 insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
                         raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 select '00000000-0000-0000-0000-000000000000', u.id, 'authenticated', 'authenticated',
-       u.key || '@cyclo.test', '', now(), '{}'::jsonb,
+       u.key || '@pgtap.test', '', now(), '{}'::jsonb,
        -- Metadata must never influence roles.
        '{"role":"SUPER_ADMIN"}'::jsonb, now(), now()
   from t_users as u;
 
-update public.profiles set full_name = 'Alice Admin',      role = 'SUPER_ADMIN',     employee_code = 'AT-001', is_git_organizer = true where id = '00000000-0000-4000-a000-000000000001';
-update public.profiles set full_name = 'Bob Backup',       role = 'SUPER_ADMIN',     employee_code = 'AT-002' where id = '00000000-0000-4000-a000-000000000002';
-update public.profiles set full_name = 'Paula Manager',    role = 'PROJECT_MANAGER', employee_code = 'AT-003', invited_by = '00000000-0000-4000-a000-000000000001' where id = '00000000-0000-4000-a000-000000000003';
-update public.profiles set full_name = 'Dan 100% Dev',     employee_code = 'AT_004' where id = '00000000-0000-4000-a000-000000000004';
-update public.profiles set full_name = 'Dora Developer',   employee_code = 'AT-005' where id = '00000000-0000-4000-a000-000000000005';
+update public.profiles set full_name = 'Alice Admin',      role = 'SUPER_ADMIN',     employee_code = 'PGT-001', is_git_organizer = true where id = '00000000-0000-4000-a000-000000000001';
+update public.profiles set full_name = 'Bob Backup',       role = 'SUPER_ADMIN',     employee_code = 'PGT-002' where id = '00000000-0000-4000-a000-000000000002';
+update public.profiles set full_name = 'Paula Manager',    role = 'PROJECT_MANAGER', employee_code = 'PGT-003', invited_by = '00000000-0000-4000-a000-000000000001' where id = '00000000-0000-4000-a000-000000000003';
+update public.profiles set full_name = 'Dan 100% Dev',     employee_code = 'PGT_004' where id = '00000000-0000-4000-a000-000000000004';
+update public.profiles set full_name = 'Dora Developer',   employee_code = 'PGT-005' where id = '00000000-0000-4000-a000-000000000005';
 update public.profiles set full_name = 'Ian Inactive',     is_active = false where id = '00000000-0000-4000-a000-000000000006';
 update public.profiles set full_name = 'Pete Former PM',   role = 'PROJECT_MANAGER', is_active = false where id = '00000000-0000-4000-a000-000000000007';
+
+create temporary table t_meta on commit drop as
+  select count(*)::int as total from public.profiles;
+grant select on t_meta to authenticated;
 
 create function pg_temp.act_as(p_key text) returns void language plpgsql as $$
 begin
@@ -107,26 +111,34 @@ select ok(not has_column_privilege('authenticated', 'public.profiles', 'role', '
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('sa');
 
-select is((select count(*)::int from public.list_employees(p_page_size => 100)), 7, 'SA lists all employees');
-select is((select max(total_count)::int from public.list_employees(p_page_size => 2)), 7, 'total_count reflects all matches');
-select is((select count(*)::int from public.list_employees(p_page => 4, p_page_size => 2)), 1, 'last page is partial');
-select is((select count(*)::int from public.list_employees(p_page => 5, p_page_size => 2)), 0, 'page past the end is empty');
+-- The local database may hold other (seeded) employees, so fixture assertions
+-- are scoped by the fixtures' email domain, which is also a valid search term.
+select is((select count(*)::int from public.list_employees(p_search => 'pgtap.test', p_page_size => 100)), 7, 'SA lists all employees');
+select is((select max(total_count)::int from public.list_employees(p_search => 'pgtap.test', p_page_size => 2)), 7, 'total_count reflects all matches');
+select is((select count(*)::int from public.list_employees(p_search => 'pgtap.test', p_page => 4, p_page_size => 2)), 1, 'last page is partial');
+select is((select count(*)::int from public.list_employees(p_search => 'pgtap.test', p_page => 5, p_page_size => 2)), 0, 'page past the end is empty');
 select is(
-  (select array_agg(full_name) from public.list_employees(p_page_size => 3)),
+  (select array_agg(full_name) from public.list_employees(p_search => 'pgtap.test', p_page_size => 3)),
   array['Alice Admin', 'Bob Backup', 'Dan 100% Dev'],
   'stable sort by name');
-select is((select count(*)::int from public.list_employees(p_is_active => false)), 2, 'filter inactive');
-select is((select count(*)::int from public.list_employees(p_role => 'SUPER_ADMIN')), 2, 'filter by role');
-select is((select count(*)::int from public.list_employees(p_role => 'PROJECT_MANAGER', p_is_active => true)), 1, 'combined filters');
+select is((select count(*)::int from public.list_employees(p_search => 'pgtap.test', p_is_active => false)), 2, 'filter inactive');
+select is((select count(*)::int from public.list_employees(p_search => 'pgtap.test', p_role => 'SUPER_ADMIN')), 2, 'filter by role');
+select is((select count(*)::int from public.list_employees(p_search => 'pgtap.test', p_role => 'PROJECT_MANAGER', p_is_active => true)), 1, 'combined filters');
 
 select is((select full_name from public.list_employees(p_search => '  paula ')), 'Paula Manager', 'search name, trimmed, case-insensitive');
-select is((select full_name from public.list_employees(p_search => 'dora@cyclo')), null::text, 'search email does not match unrelated');
-select is((select full_name from public.list_employees(p_search => 'dev2@cyclo')), 'Dora Developer', 'search by email');
-select is((select full_name from public.list_employees(p_search => 'at-003')), 'Paula Manager', 'search by employee code');
-select is((select count(*)::int from public.list_employees(p_search => '%')), 1, '% is matched literally');
--- Unescaped, 'T_00' would match every AT-00x code.
-select is((select count(*)::int from public.list_employees(p_search => 'T_00')), 1, '_ is matched literally');
-select is((select count(*)::int from public.list_employees(p_search => '')), 7, 'blank search returns everyone');
+select is((select full_name from public.list_employees(p_search => 'dora@pgtap')), null::text, 'search email does not match unrelated');
+select is((select full_name from public.list_employees(p_search => 'dev2@pgtap')), 'Dora Developer', 'search by email');
+select is((select full_name from public.list_employees(p_search => 'pgt-003')), 'Paula Manager', 'search by employee code');
+select is(
+  (select count(*)::int from public.list_employees(p_search => '%', p_page_size => 100) where email like '%@pgtap.test'),
+  1, '% is matched literally');
+-- Unescaped, 'GT_00' would match every PGT-00x fixture code.
+select is(
+  (select count(*)::int from public.list_employees(p_search => 'GT_00', p_page_size => 100) where email like '%@pgtap.test'),
+  1, '_ is matched literally');
+select is(
+  (select max(total_count)::int from public.list_employees(p_search => '', p_page_size => 1)),
+  (select total from t_meta), 'blank search returns everyone');
 
 select throws_ok($$ select * from public.list_employees(p_page_size => 0) $$,   '22023', 'invalid_page_size', 'page size below range rejected');
 select throws_ok($$ select * from public.list_employees(p_page_size => 101) $$, '22023', 'invalid_page_size', 'page size above range rejected');
@@ -142,7 +154,7 @@ select is(
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('pm');
 
-select is((select count(*)::int from public.list_employees(p_page_size => 100)), 7, 'PM lists all employees, including inactive');
+select is((select count(*)::int from public.list_employees(p_search => 'pgtap.test', p_page_size => 100)), 7, 'PM lists all employees, including inactive');
 select is((select full_name from public.get_employee('00000000-0000-4000-a000-000000000006')), 'Ian Inactive', 'PM reads directory detail');
 select throws_ok($$ select * from public.admin_get_employee('00000000-0000-4000-a000-000000000001') $$, '42501', 'forbidden', 'PM cannot read administrative detail');
 select throws_ok($$ select invited_by from public.profiles $$, '42501', null, 'PM cannot select administrative columns directly');

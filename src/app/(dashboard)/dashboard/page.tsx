@@ -9,7 +9,7 @@ export default async function DashboardPage() {
   const { profile, user } = await requireActiveProfile();
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-3xl items-center px-6 py-12">
+    <main className="mx-auto flex w-full max-w-3xl flex-1 items-center px-6 py-12">
       <section aria-labelledby="dashboard-title" className="w-full rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-10">
         <p className="text-sm font-semibold tracking-widest text-primary">CYCLO</p>
         <h1 id="dashboard-title" className="mt-4 text-2xl font-semibold tracking-tight">Dashboard</h1>

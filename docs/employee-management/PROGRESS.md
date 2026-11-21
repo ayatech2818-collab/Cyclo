@@ -6,7 +6,7 @@ Branch: `feature/employee-management` · Hosted project: `Cyclo` (`jbcvznfxycngy
 | --- | --- | --- |
 | 1 | Inspect architecture, migrations, live schema; identify DB changes | **Done** (2026-11-20) |
 | 2 | Secure read RPCs, DTOs, queries, column-grant narrowing | **Done locally** (2026-11-20); hosted apply pending approval |
-| 3 | Employee directory UI (`/employees`, `/employees/[id]`) | Pending |
+| 3 | Employee directory UI (`/employees`, `/employees/[id]`) | **Done locally** (2026-11-21) |
 | 4 | Admin mutations + audit log | Pending |
 | 5 | Invitations, invite callback, onboarding + guard | Pending |
 | 6 | Self-profile + avatar storage | Pending |
@@ -138,3 +138,63 @@ Covered: SA and PM see all employees, including inactive ones. A PM cannot get a
 ### Remaining
 
 Phase 3 (directory UI) builds on `queries.server.ts`. Still open from Phase 1: migration-history approach (finding 1) and the onboarding backfill rule (finding 2, needed by Phase 5).
+
+---
+
+## Phase 3 — Employee directory UI
+
+### Routes
+
+| Route | Access | Data source |
+| --- | --- | --- |
+| `/employees` | active SA, PM | `list_employees` (server-side search, filters, pagination) |
+| `/employees/[id]` | active SA: directory + administration cards; PM: directory card only | SA → `admin_get_employee`; PM → `get_employee` (separate DTOs) |
+| Developers / other roles | Real HTTP **404**, styled not-found page, generic title, no data | — |
+
+### Files
+
+| File | Change |
+| --- | --- |
+| `src/app/(dashboard)/employees/{layout,page,loading,error}.tsx` | **New** directory route. The layout's role gate runs above the loading boundary, so the 404 status is real. |
+| `src/app/(dashboard)/employees/[id]/{layout,page,loading}.tsx` | **New** detail route. The layout rejects malformed ids with a 404. |
+| `src/app/(dashboard)/not-found.tsx` | **New** styled 404 inside the signed-in shell |
+| `src/app/(dashboard)/layout.tsx` | Renders the new app header |
+| `src/app/(dashboard)/dashboard/page.tsx` | One class change: `min-h-svh` → `flex-1`, to fit below the header |
+| `src/components/layout/{app-header,nav-link}.tsx` | **New** header with role-aware navigation and log out |
+| `src/features/employees/components/*` | **New** `EmployeeTable` (table on md+, cards on mobile), `EmployeeFilters` (GET form, no client JS), `Pagination`, `EmployeeAvatar`, `RoleBadge`/`EmployeeStatusBadge`, `EmployeeDetails` cards, `StatePanel` |
+| `src/features/employees/{format,page-errors.server}.ts` | **New** display helpers. `loadForPage` maps forbidden/not-found to a 404, an expired session to `/login`, and other failures to an inline error. |
+| `src/features/employees/validation.ts` | Adds `canViewDirectory`, `hasActiveFilters`, `directoryHref` |
+| `src/features/auth/server.ts` | **Changed:** `getRequestAccess` uses React `cache()` (details below) |
+| `tests/employees-ui.test.mjs`, `tests/helpers/load-ts-module.mjs` | **New** server-render tests for components, helpers and page error handling |
+| `supabase/tests/database/employee_directory.test.sql` | Fixtures moved to `@pgtap.test` / `PGT-*` and counts scoped, so the suite passes with seeded local data |
+| `scripts/seed-local-employees.mjs`, `scripts/dev-local.mjs`, `package.json`, `README.md` | Local-only seeding and run helpers (both refuse non-loopback URLs) |
+
+### Auth change (backward compatible)
+
+`requireActiveProfile()` previously ran a new Supabase Auth `getUser()` and profile query on every call. One directory request called it four or more times: the dashboard layout, the employees layout, the page and each query. It now reads `getRequestAccess()`, which React `cache()` memoizes **per server request only**. Behaviour is identical, and deactivation still takes effect on the next request. `getAccess()`, the proxy and login are unchanged.
+
+### UX
+
+- Search, role and status filters live in the URL, so they are shareable and work with the back button. Applying a filter resets to page 1, and each parameter is validated (`parseDirectoryQuery`).
+- Server-side pagination uses page sizes 10, 20 or 50 (default 20). An out-of-range page shows "This page is out of range" with a link back.
+- States: loading skeletons, empty ("No employees yet"), no matches (with Clear), inline error with retry, a generic `error.tsx` that never shows raw messages, and a styled 404.
+- Accessibility: labelled controls, `role="search"`, table caption and `scope` headers, `aria-current` on the active nav item and current page, `aria-label` on icon-only buttons and "View" links, visible focus rings, and decorative avatars with `alt=""`.
+- Responsive: a table at tablet/desktop widths and cards on mobile. Verified at 375px with no horizontal scroll.
+- Privacy: employee names never appear in tab titles. Avatars render only for `https` URLs, as a plain `<img>` with `referrerPolicy="no-referrer"`.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `pnpm test` | 40/40 (adds 12 UI/helper tests) |
+| `pnpm test:db` | 53/53 (with 28 seeded local employees present) |
+| `pnpm test:integration` | 7/7 |
+| `eslint`, `tsc --noEmit`, `next build --webpack` | Pass |
+| Browser (local stack, seeded SA/PM/Dev) | SA sees the list and admin detail. Search (including literal `%`), filters, pagination, out-of-range and no-match states all work. Invalid and unknown ids return 404. PM sees directory fields only; the page HTML and RSC payload contain no admin field names or values. The developer has no nav link and gets a 404 on all employee URLs, with no data. The mobile layout is correct. |
+
+### Notes and limitations
+
+- `.claude/launch.json` (local preview config) and `.env.seed-local` are local files and are not part of the commit.
+- The seeded local Super Admin (`admin@cyclo.test`) cannot be deleted while it is the only active local Super Admin. That is the last-admin protection working as designed.
+- An *unknown but well-formed* employee id for an authorized viewer still returns 404 content with a streamed 200 status, because the lookup happens below the loading boundary. No data is exposed.
+- No edit actions yet; the "View" action is the only row action until Phase 4.

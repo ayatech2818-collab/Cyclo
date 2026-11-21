@@ -122,8 +122,21 @@ test("database errors map to safe codes without leaking messages", () => {
   assert.equal(mapDatabaseError({ code: "08006" }), "unavailable");
   assert.equal(mapDatabaseError({ code: "XX000", message: "relation private.secret does not exist" }), "unexpected");
   assert.equal(mapDatabaseError(null), "unexpected");
+  assert.equal(mapDatabaseError({ code: "PGRST202", message: "Could not find the function public.list_employees" }), "unavailable");
+  assert.equal(mapDatabaseError({ code: "42883" }), "unavailable");
   const error = new EmployeeError("forbidden");
   assert.doesNotMatch(error.message, /42501|sql|private/i);
+});
+
+test("failure diagnostics are a plain string with the code and no raw message", () => {
+  const missing = errors.describeDatabaseFailure("list_employees", {
+    code: "PGRST202", message: "Could not find the function public.list_employees(p_search => secret-search)",
+  });
+  assert.equal(typeof missing, "string");
+  assert.match(missing, /^\[employees\] list_employees failed: code=PGRST202 \(database function not found/);
+  assert.doesNotMatch(missing, /secret-search|Could not find/);
+  assert.equal(errors.describeDatabaseFailure("get_employee", { code: "XX000" }), "[employees] get_employee failed: code=XX000");
+  assert.equal(errors.describeDatabaseFailure("get_employee", null), "[employees] get_employee failed: code=unknown");
 });
 
 // ---------------------------------------------------------------------------
@@ -137,6 +150,7 @@ const compiled = ts.transpileModule(source, {
 
 function queries({ role = "SUPER_ADMIN", rpc }) {
   const calls = [];
+  const logs = [];
   const mod = { exports: {} };
   const mocks = {
     "server-only": {},
@@ -157,13 +171,13 @@ function queries({ role = "SUPER_ADMIN", rpc }) {
     "./validation": validation,
   };
   runInNewContext(compiled, {
-    module: mod, exports: mod.exports, console: { error() {} },
+    module: mod, exports: mod.exports, console: { error: (...args) => logs.push(args) },
     require(name) {
       assert.ok(Object.hasOwn(mocks, name), `unexpected dependency ${name}`);
       return mocks[name];
     },
   });
-  return { ...mod.exports, calls };
+  return { ...mod.exports, calls, logs };
 }
 
 const query = parseDirectoryQuery({});
@@ -208,6 +222,20 @@ test("a page past the end still reports the real total", async () => {
 test("RPC errors surface as safe application errors", async () => {
   const q = queries({ rpc: () => ({ data: null, error: { code: "42501", message: "forbidden" } }) });
   await assert.rejects(q.listEmployees(query), (e) => e instanceof EmployeeError && e.code === "forbidden");
+});
+
+test("a missing RPC (migration not applied) is reported as unavailable with a readable log line", async () => {
+  const q = queries({ rpc: () => ({ data: null, error: { code: "PGRST202", message: "Could not find the function" } }) });
+  await assert.rejects(q.listEmployees(query), (e) => e instanceof EmployeeError && e.code === "unavailable");
+  assert.equal(q.logs.length, 1);
+  assert.equal(q.logs[0].length, 1, "single string argument");
+  assert.match(q.logs[0][0], /list_employees failed: code=PGRST202 \(database function not found/);
+});
+
+test("expected authorization failures are not logged as errors", async () => {
+  const q = queries({ rpc: () => ({ data: null, error: { code: "42501", message: "forbidden" } }) });
+  await assert.rejects(q.listEmployees(query));
+  assert.equal(q.logs.length, 0);
 });
 
 test("invalid ids and missing rows resolve to null without leaking", async () => {
