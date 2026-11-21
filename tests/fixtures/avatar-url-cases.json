@@ -1,0 +1,297 @@
+[
+  {
+    "label": "standard HTTPS",
+    "value": "https://example.com/avatar.png",
+    "valid": true
+  },
+  {
+    "label": "bare hostname",
+    "value": "https://example.com",
+    "valid": true
+  },
+  {
+    "label": "explicit 443",
+    "value": "https://example.com:443/avatar.png",
+    "valid": true
+  },
+  {
+    "label": "NULL clears",
+    "value": null,
+    "valid": true
+  },
+  {
+    "label": "empty clears",
+    "value": "",
+    "valid": true
+  },
+  {
+    "label": "uppercase scheme and hostname",
+    "value": "HTTPS://EXAMPLE.COM/avatar.png",
+    "valid": true
+  },
+  {
+    "label": "query and fragment",
+    "value": "https://example.com?size=2#avatar",
+    "valid": true
+  },
+  {
+    "label": "Unicode path",
+    "value": "https://example.com/चित्र/🙂.png",
+    "valid": true
+  },
+  {
+    "label": "punycode hostname",
+    "value": "https://xn--bcher-kva.example/avatar.png",
+    "valid": true
+  },
+  {
+    "label": "trailing DNS dot",
+    "value": "https://example.com./avatar.png",
+    "valid": true
+  },
+  {
+    "label": "localhost",
+    "value": "https://localhost/avatar.png",
+    "valid": true
+  },
+  {
+    "label": "IPv4",
+    "value": "https://192.0.2.1/a.png",
+    "valid": true
+  },
+  {
+    "label": "IPv6",
+    "value": "https://[2001:db8::1]/a.png",
+    "valid": true
+  },
+  {
+    "label": "IPv6 loopback",
+    "value": "https://[::1]:443/a.png",
+    "valid": true
+  },
+  {
+    "label": "IPv4-mapped IPv6",
+    "value": "https://[::ffff:192.0.2.1]/a.png",
+    "valid": true
+  },
+  {
+    "label": "lowest port",
+    "value": "https://example.com:1/",
+    "valid": true
+  },
+  {
+    "label": "highest port",
+    "value": "https://example.com:65535/",
+    "valid": true
+  },
+  {
+    "label": "port leading zeros",
+    "value": "https://example.com:00000443/",
+    "valid": true
+  },
+  {
+    "label": "exact maximum length",
+    "value": "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "valid": true
+  },
+  {
+    "label": "missing host",
+    "value": "https://:443/",
+    "valid": false
+  },
+  {
+    "label": "out of range port",
+    "value": "https://example.test:99999/",
+    "valid": false
+  },
+  {
+    "label": "HTTP",
+    "value": "http://example.com/avatar.png",
+    "valid": false
+  },
+  {
+    "label": "credentials",
+    "value": "https://user:pass@example.com/",
+    "valid": false
+  },
+  {
+    "label": "username",
+    "value": "https://user@example.com/",
+    "valid": false
+  },
+  {
+    "label": "empty userinfo",
+    "value": "https://@example.com/",
+    "valid": false
+  },
+  {
+    "label": "triple slash",
+    "value": "https:///avatar.png",
+    "valid": false
+  },
+  {
+    "label": "embedded space",
+    "value": "https://example.com/a b",
+    "valid": false
+  },
+  {
+    "label": "leading space",
+    "value": " https://example.com/",
+    "valid": false
+  },
+  {
+    "label": "trailing space",
+    "value": "https://example.com/ ",
+    "valid": false
+  },
+  {
+    "label": "whitespace only",
+    "value": " ",
+    "valid": false
+  },
+  {
+    "label": "newline",
+    "value": "https://example.com/\n",
+    "valid": false
+  },
+  {
+    "label": "tab",
+    "value": "https://example.com/\t",
+    "valid": false
+  },
+  {
+    "label": "NBSP",
+    "value": "https://example.com/ ",
+    "valid": false
+  },
+  {
+    "label": "Unicode line separator",
+    "value": "https://example.com/ ",
+    "valid": false
+  },
+  {
+    "label": "zero width no-break space",
+    "value": "https://example.com/﻿",
+    "valid": false
+  },
+  {
+    "label": "control character",
+    "value": "https://example.com/\u0001",
+    "valid": false
+  },
+  {
+    "label": "too long",
+    "value": "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "valid": false
+  },
+  {
+    "label": "zero port",
+    "value": "https://example.com:0/",
+    "valid": false
+  },
+  {
+    "label": "empty port",
+    "value": "https://example.com:/",
+    "valid": false
+  },
+  {
+    "label": "signed port",
+    "value": "https://example.com:+443/",
+    "valid": false
+  },
+  {
+    "label": "nonnumeric port",
+    "value": "https://example.com:abc/",
+    "valid": false
+  },
+  {
+    "label": "fractional port",
+    "value": "https://example.com:4.43/",
+    "valid": false
+  },
+  {
+    "label": "backslash",
+    "value": "https://example.com\\evil/a.png",
+    "valid": false
+  },
+  {
+    "label": "invalid IPv4",
+    "value": "https://256.1.2.3/",
+    "valid": false
+  },
+  {
+    "label": "IPv4 shorthand",
+    "value": "https://127.1/",
+    "valid": false
+  },
+  {
+    "label": "IPv4 integer",
+    "value": "https://2130706433/",
+    "valid": false
+  },
+  {
+    "label": "octal IPv4",
+    "value": "https://0177.0.0.1/",
+    "valid": false
+  },
+  {
+    "label": "hex IPv4",
+    "value": "https://0x7f000001/",
+    "valid": false
+  },
+  {
+    "label": "unbracketed IPv6",
+    "value": "https://2001:db8::1/",
+    "valid": false
+  },
+  {
+    "label": "invalid IPv6",
+    "value": "https://[2001:db8:::1]/",
+    "valid": false
+  },
+  {
+    "label": "IPv6 subnet",
+    "value": "https://[2001:db8::/32]/",
+    "valid": false
+  },
+  {
+    "label": "IPv6 zone",
+    "value": "https://[fe80::1%25eth0]/",
+    "valid": false
+  },
+  {
+    "label": "bad embedded IPv4",
+    "value": "https://[::ffff:999.1.2.3]/",
+    "valid": false
+  },
+  {
+    "label": "empty DNS label",
+    "value": "https://example..com/",
+    "valid": false
+  },
+  {
+    "label": "leading hyphen",
+    "value": "https://-example.com/",
+    "valid": false
+  },
+  {
+    "label": "trailing hyphen",
+    "value": "https://example-.com/",
+    "valid": false
+  },
+  {
+    "label": "too long DNS label",
+    "value": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com/",
+    "valid": false
+  },
+  {
+    "label": "encoded authority",
+    "value": "https://%65xample.com/",
+    "valid": false
+  },
+  {
+    "label": "raw Unicode host subset",
+    "value": "https://bücher.example/",
+    "valid": false
+  }
+]

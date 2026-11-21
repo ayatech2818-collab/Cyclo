@@ -264,3 +264,58 @@ Browser checks against a production local build verified admin controls, code pe
 - Docker access required execution outside the sandbox; it was resolved for the local stack. No database work remains blocked.
 - Hosted migration history/deployment strategy and the future onboarding rule remain unresolved as previously documented. No Phase 5 work was started.
 - All Phase 4 work remains uncommitted. Temporary verification files and the local preview server are removed/stopped before handoff. Existing Node module-type warnings remain informational and unchanged.
+
+
+---
+
+## Phase 4 — Security review fixes (2026-11-21)
+
+Both Low findings were addressed on feature/employee-management-actions. The pre-existing Phase 1–4 migrations were not changed. A single forward migration was added: supabase/migrations/20261121095459_employee_mutation_security_hardening.sql. It was applied successfully to the local 127.0.0.1:54322 stack through the pinned CLI migration workflow. A subsequent dry-run reports no pending migrations.
+
+### Authorization before locking
+
+The old helper acquired actor/target FOR UPDATE locks before testing the caller's role. The replacement private.lock_employee_admin_target resolves the existing auth.uid() bridge and rejects inactive/non-Super-Admin callers before any employee row locks. It then locks actor and target in the existing deterministic UUID order and repeats the authorization check after the wait. That second check remains authoritative. Self-management checks and the existing last-admin triggers/counter are unchanged.
+
+Two behavioral integration regressions exercise real competing PostgreSQL sessions. One holds actor and target rows locked and verifies Developers, PMs and inactive admins return 42501 forbidden rather than lock timeout. The other observes an authorized caller waiting on a lower-UUID target lock, deactivates the caller before releasing that lock, and verifies the post-lock check rejects the mutation without changing the target. The existing concurrent cross-admin demotion test still passes.
+
+### Avatar policy
+
+The former database prefix/shape regex admitted malformed authorities, and TypeScript relied on WHATWG URL repair. Both layers now use a documented, deliberately consistent syntax policy; see AVATAR_URL_POLICY.md. HTTPS, a valid nonempty DNS/IP host, optional decimal port 1–65535, and the 2,048-code-point limit are independently enforced. Credentials, whitespace/control characters, malformed authorities and backslashes are rejected. NULL and genuinely empty input still clear the avatar. DNS/punycode, canonical IPv4, bracketed IPv6, ordinary paths, Unicode paths, query strings and fragments remain supported.
+
+The policy uses a new private immutable SECURITY INVOKER validator owned by cyclo_employee_api, without EXECUTE grants to public/anon/authenticated/service_role. The two replacement privileged functions retain that owner, SECURITY DEFINER and empty search_path. Existing wrappers, RPC signatures, DTOs, RLS policies, column grants and audit behavior are unchanged. Temporary schema CREATE and SET-role privileges are revoked in the migration transaction.
+
+The one existing application-test expectation changed intentionally: a whitespace-only avatar no longer clears the avatar, because the approved policy requires rejecting URL whitespace. Empty-string and NULL clearing are still tested. No test was weakened.
+
+### Files for this follow-up
+
+| File | Change |
+| --- | --- |
+| supabase/migrations/20261121095459_employee_mutation_security_hardening.sql | New validator and two narrowly scoped function replacements |
+| src/features/employees/avatar-url-policy.ts | Matching TypeScript URL policy |
+| src/features/employees/mutation-validation.ts | Uses policy without trimming URL whitespace |
+| docs/employee-management/AVATAR_URL_POLICY.md | Accepted subset and normalization policy |
+| tests/fixtures/avatar-url-cases.json | 59 shared application/direct-RPC cases |
+| tests/employee-security-hardening.test.mjs | 59 new application tests |
+| supabase/tests/database/employee_security_hardening.test.sql | 31 new pgTAP assertions |
+| tests/helpers/local-postgres.mjs | Local-only competing-session test orchestration |
+| tests/integration/employee-mutations.local.mjs | 59 shared RPC cases, two lock/auth races, owner-only cleanup of disposable audit fixtures |
+| tests/employee-mutations.test.mjs | Updates whitespace-only URL expectation |
+| docs/employee-management/PROGRESS.md | This report |
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| pnpm lint | Pass |
+| pnpm typecheck | Pass |
+| pnpm test | 130/130 pass, zero skipped (includes six theme tests present in the current repository) |
+| pnpm test:db | 159/159 pass, zero failures (128 existing + 31 new) |
+| pnpm test:integration | 74/74 pass, zero skipped (13 existing + 61 new) |
+| pnpm build | Pass with explicit local Supabase configuration |
+| Local database SQL lint | No schema errors |
+| Local security advisors at warning/error level | No issues |
+| Git diff whitespace check | Pass |
+
+Both findings are closed by source review and behavioral regressions. The original 28 profiles remain with the same sorted-ID fingerprint (f4b8b85720012a438cf60b99fca4c9b7), and all 32 pre-existing audit records remain. New integration users/profiles and their disposable audit rows are removed after the suite using trusted local fixture cleanup; ordinary users still have no audit DELETE access. Existing demo avatar URLs were all NULL, so no existing nonempty URL was rejected or rewritten. The last-admin counter remains consistent.
+
+Docker was initially unavailable; the installed Docker Desktop engine was brought online and all database/integration checks above were actually executed. No reset or hosted connection was used. Existing repository HEAD changed externally to 0e0bf07 during the task; those changes, including theme work, were preserved. This follow-up remains uncommitted. No commit, push, merge, hosted change or Phase 5 work was performed by this task.

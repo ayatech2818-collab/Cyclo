@@ -18,7 +18,8 @@ function mutations({role="SUPER_ADMIN",rpc=async()=>({data:[row],error:null}),gu
 }
 const ops=[['updateEmployeeDetails',{fullName:' Name ',avatarUrl:''}],['setEmployeeCode',' CODE '],['setEmployeeRole','PROJECT_MANAGER'],['setEmployeeActive',false],['setGitOrganizer',true]];
 test("mutation validation trims and bounds explicit fields",()=>{
- assert.equal(JSON.stringify(validation.validateEmployeeDetails(' Name ',' ')),JSON.stringify({fullName:'Name',avatarUrl:null}));
+ // URL whitespace is now rejected; an actually empty URL still clears it.
+ assert.equal(JSON.stringify(validation.validateEmployeeDetails(' Name ','')),JSON.stringify({fullName:'Name',avatarUrl:null}));
  assert.equal(validation.validateEmployeeCode('  '),null);
  assert.equal(validation.validateEmployeeCode(' Ab-c_1 '),'Ab-c_1');
  for(const name of ['', ' '.repeat(4),'x'.repeat(201),null,{}]) assert.throws(()=>validation.validateEmployeeDetails(name,''),{code:'invalid_input'});

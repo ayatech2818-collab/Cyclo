@@ -1,17 +1,17 @@
 import { EmployeeError } from "./errors";
 import { isAppRole, isUuid } from "./validation";
+import { isValidEmployeeAvatarUrl } from "./avatar-url-policy";
 
 function invalid(): never { throw new EmployeeError("invalid_input"); }
 function text(value: unknown): string { return typeof value === "string" ? value.trim() : invalid(); }
 export function validateEmployeeId(value: unknown): string { return isUuid(value) ? value : invalid(); }
 export function validateEmployeeDetails(fullName: unknown, avatarUrl: unknown) {
   const name = text(fullName);
-  const avatar = avatarUrl === null ? "" : text(avatarUrl);
+  // Unlike names/codes, URL whitespace must be rejected rather than repaired.
+  if (avatarUrl !== null && typeof avatarUrl !== "string") invalid();
+  const avatar = avatarUrl as string | null;
   if (!name || [...name].length > 200) invalid();
-  if (avatar) {
-    if ([...avatar].length > 2048 || /\s/.test(avatar)) invalid();
-    try { if (new URL(avatar).protocol !== "https:") invalid(); } catch { invalid(); }
-  }
+  if (!isValidEmployeeAvatarUrl(avatar)) invalid();
   return { fullName: name, avatarUrl: avatar || null };
 }
 /** Existing schema accepts any text up to 32 characters; uniqueness is case-sensitive. */
