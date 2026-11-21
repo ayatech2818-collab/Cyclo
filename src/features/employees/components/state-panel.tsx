@@ -31,4 +31,4 @@ export function StatePanel({
 }
 
 export const secondaryButton =
-  "inline-flex h-9 items-center rounded-md border border-border bg-surface px-4 text-sm font-medium text-text-primary hover:bg-background";
+  "inline-flex h-9 items-center rounded-md border border-border bg-surface px-4 text-sm font-medium text-text-primary hover:bg-surface-muted";

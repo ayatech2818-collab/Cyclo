@@ -1,17 +1,148 @@
 @import "tailwindcss";
 
-@theme {
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-background: #f8fafc;
-  --color-surface: #ffffff;
-  --color-text-primary: #172033;
-  --color-text-secondary: #64748b;
-  --color-border: #e2e8f0;
-  --color-success: #0d9488;
-  --color-warning: #d97706;
-  --color-danger: #dc2626;
+/*
+ * CYCLO design tokens
+ *
+ * Colours are defined once per theme as CSS variables and mapped to Tailwind
+ * utilities through `@theme inline`, so every existing class (bg-surface,
+ * text-text-secondary, bg-primary/10, …) switches theme automatically.
+ *
+ * Theme selection (see src/lib/theme):
+ *   <html>                    -> follows the operating system
+ *   <html data-theme="light"> -> forced light
+ *   <html data-theme="dark">  -> forced dark
+ *
+ * All text/background pairs meet WCAG 2.1 AA (4.5:1) in both themes.
+ */
 
+:root {
+  color-scheme: light;
+
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --surface-muted: #f1f3f6;
+  --border: #e3e6eb;
+  --border-strong: #cbd2dc;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-foreground: #ffffff;
+  --ring: #6366f1;
+
+  --success: #047857;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-foreground: #ffffff;
+
+  /* Brand panel (login) — deep indigo in both themes. */
+  --brand-from: #312e81;
+  --brand-via: #4338ca;
+  --brand-to: #6d28d9;
+
+  --shadow-sm-value: 0 1px 2px rgb(15 23 42 / 0.05), 0 1px 3px rgb(15 23 42 / 0.04);
+  --shadow-lg-value: 0 12px 32px -12px rgb(15 23 42 / 0.18);
+}
+
+/*
+ * Dark palette. Defined twice: for an explicit choice and for the system
+ * preference (plain CSS cannot share one rule between a selector and a media
+ * query). Keep both blocks identical; tests/theme.test.mjs checks this.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #0a0c10;
+  --surface: #12151b;
+  --surface-muted: #191d25;
+  --border: #262b35;
+  --border-strong: #353c49;
+  --text-primary: #e8ebf0;
+  --text-secondary: #a1a9b8;
+  --text-muted: #7f8899;
+
+  --primary: #8b8cf8;
+  --primary-hover: #a5a6fb;
+  --primary-foreground: #0a0c10;
+  --ring: #8b8cf8;
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --danger-hover: #fca5a5;
+  --danger-foreground: #0a0c10;
+
+  --brand-from: #1e1b4b;
+  --brand-via: #312e81;
+  --brand-to: #4c1d95;
+
+  --shadow-sm-value: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-lg-value: 0 16px 40px -12px rgb(0 0 0 / 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --background: #0a0c10;
+    --surface: #12151b;
+    --surface-muted: #191d25;
+    --border: #262b35;
+    --border-strong: #353c49;
+    --text-primary: #e8ebf0;
+    --text-secondary: #a1a9b8;
+    --text-muted: #7f8899;
+
+    --primary: #8b8cf8;
+    --primary-hover: #a5a6fb;
+    --primary-foreground: #0a0c10;
+    --ring: #8b8cf8;
+
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --danger-hover: #fca5a5;
+    --danger-foreground: #0a0c10;
+
+    --brand-from: #1e1b4b;
+    --brand-via: #312e81;
+    --brand-to: #4c1d95;
+
+    --shadow-sm-value: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-lg-value: 0 16px 40px -12px rgb(0 0 0 / 0.6);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-brand-from: var(--brand-from);
+  --color-brand-via: var(--brand-via);
+  --color-brand-to: var(--brand-to);
+
+  --shadow-sm: var(--shadow-sm-value);
+  --shadow-lg: var(--shadow-lg-value);
+}
+
+@theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
@@ -23,18 +154,17 @@
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
-  --shadow-sm: 0 1px 3px rgb(23 32 51 / 0.04);
 }
 
 @layer base {
-  :root {
-    color-scheme: light;
+  html {
+    background: var(--background);
   }
 
   body {
     min-width: 320px;
-    background: var(--color-background);
-    color: var(--color-text-primary);
+    background: var(--background);
+    color: var(--text-primary);
     font-family: var(--font-sans);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
@@ -42,12 +172,28 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--ring);
     outline-offset: 3px;
   }
 
   ::selection {
-    background: var(--color-primary);
-    color: var(--color-surface);
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  ::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+  }
+}
+
+/* Respect users who ask for less motion (theme fades, spinners, skeletons). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
