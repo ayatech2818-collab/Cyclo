@@ -10,14 +10,14 @@ export type Database = {
           Tables: {
             "profiles": {
                   Row: {
-                    "avatar_url": string | null,"created_at": string,"email": string | null,"employee_code": string | null,"full_name": string | null,"id": string,"invited_by": string | null,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string | null,"requires_onboarding": boolean,"role": Database["public"]['Enums']["app_role"],"updated_at": string
+                    "avatar_kind": string,"avatar_path": string | null,"avatar_symbol": string | null,"avatar_url": string | null,"created_at": string,"email": string | null,"employee_code": string | null,"full_name": string | null,"id": string,"invited_by": string | null,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string | null,"requires_onboarding": boolean,"role": Database["public"]['Enums']["app_role"],"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "avatar_url"?: string | null,"created_at"?: string,"email"?: string | null,"employee_code"?: string | null,"full_name"?: string | null,"id": string,"invited_by"?: string | null,"is_active"?: boolean,"is_git_organizer"?: boolean,"onboarded_at"?: string | null,"requires_onboarding"?: boolean,"role"?: Database["public"]['Enums']["app_role"],"updated_at"?: string
+                    "avatar_kind"?: string,"avatar_path"?: string | null,"avatar_symbol"?: string | null,"avatar_url"?: string | null,"created_at"?: string,"email"?: string | null,"employee_code"?: string | null,"full_name"?: string | null,"id": string,"invited_by"?: string | null,"is_active"?: boolean,"is_git_organizer"?: boolean,"onboarded_at"?: string | null,"requires_onboarding"?: boolean,"role"?: Database["public"]['Enums']["app_role"],"updated_at"?: string
                   }
                   Update: {
-                    "avatar_url"?: string | null,"created_at"?: string,"email"?: string | null,"employee_code"?: string | null,"full_name"?: string | null,"id"?: string,"invited_by"?: string | null,"is_active"?: boolean,"is_git_organizer"?: boolean,"onboarded_at"?: string | null,"requires_onboarding"?: boolean,"role"?: Database["public"]['Enums']["app_role"],"updated_at"?: string
+                    "avatar_kind"?: string,"avatar_path"?: string | null,"avatar_symbol"?: string | null,"avatar_url"?: string | null,"created_at"?: string,"email"?: string | null,"employee_code"?: string | null,"full_name"?: string | null,"id"?: string,"invited_by"?: string | null,"is_active"?: boolean,"is_git_organizer"?: boolean,"onboarded_at"?: string | null,"requires_onboarding"?: boolean,"role"?: Database["public"]['Enums']["app_role"],"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -104,6 +104,11 @@ isOneToOne: false
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"]
             }[]
                            },
+"get_employee_avatars":
+{ Args: { "p_employee_ids": (string)[] }; Returns: {
+              "avatar_kind": string,"avatar_path": string,"avatar_symbol": string,"avatar_url": string,"id": string
+            }[]
+                           },
 "get_my_employee_invitation":
 { Args: Record<PropertyKey, never>; Returns: {
               "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
@@ -119,9 +124,29 @@ isOneToOne: false
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"],"total_count": number
             }[]
                            },
+"remove_my_avatar_image":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "avatar_kind": string,"avatar_path": string,"avatar_symbol": string,"previous_path": string
+            }[]
+                           },
+"set_my_avatar":
+{ Args: { "p_kind": string,"p_symbol"?: string }; Returns: {
+              "avatar_kind": string,"avatar_path": string,"avatar_symbol": string,"previous_path": string
+            }[]
+                           },
+"set_my_avatar_image":
+{ Args: { "p_path": string }; Returns: {
+              "avatar_kind": string,"avatar_path": string,"avatar_symbol": string,"previous_path": string
+            }[]
+                           },
 "start_employee_onboarding":
 { Args: Record<PropertyKey, never>; Returns: {
               "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
+            }[]
+                           },
+"update_my_profile":
+{ Args: { "p_full_name": string }; Returns: {
+              "full_name": string
             }[]
                            }
           }

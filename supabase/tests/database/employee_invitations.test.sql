@@ -6,6 +6,8 @@ insert into auth.users(instance_id,id,aud,role,email,encrypted_password,email_co
 values('00000000-0000-0000-0000-000000000000','60000000-0000-4000-a000-000000000001','authenticated','authenticated','phase5-admin@pgtap.test','hash',now(),'{}',now(),now()),
 ('00000000-0000-0000-0000-000000000000','60000000-0000-4000-a000-000000000002','authenticated','authenticated','phase5-pm@pgtap.test','hash',now(),'{}',now(),now()),
 ('00000000-0000-0000-0000-000000000000','60000000-0000-4000-a000-000000000003','authenticated','authenticated','phase5-dev@pgtap.test','hash',now(),'{"role":"SUPER_ADMIN"}',now(),now());
+-- Phase 7 H1: uninvited accounts are created inactive; fixtures are activated explicitly.
+update public.profiles set is_active=true where id in ('60000000-0000-4000-a000-000000000001','60000000-0000-4000-a000-000000000002','60000000-0000-4000-a000-000000000003');
 update public.profiles set role='SUPER_ADMIN' where id='60000000-0000-4000-a000-000000000001';
 update public.profiles set role='PROJECT_MANAGER' where id='60000000-0000-4000-a000-000000000002';
 select ok(not has_function_privilege('anon','public.admin_create_employee_invitation(text,text,public.app_role)','execute'),'anon denied');

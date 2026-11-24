@@ -125,6 +125,8 @@ for (const role of ['SUPER_ADMIN','PROJECT_MANAGER','DEVELOPER']) test('detail p
   '@/features/employees/queries.server':{adminGetEmployee:async()=>{assert.equal(role,'SUPER_ADMIN');return dto;},getEmployee:async()=>{assert.equal(role,'PROJECT_MANAGER');return dto;}},
   '@/features/employees/components/employee-management':{EmployeeManagement:()=>React.createElement('div',null,'MUTATION_CONTROLS')},
   '@/features/employees/components/employee-details':{EmployeeHeader:()=>null,EmployeeDirectoryFields:()=>null,EmployeeAdminFields:()=>React.createElement('div',null,'ADMIN_FIELDS')},
+  // Phase 6: avatars load only after the role check and only for the shown employee.
+  '@/features/profile/avatars.server':{loadAvatars:async(ids)=>{assert.notEqual(role,'DEVELOPER');assert.deepEqual([...ids],[dto.id]);return new Map();}},
  });
  if(role==='DEVELOPER'){await assert.rejects(page.default({params:Promise.resolve({id:OTHER})}),{code:'NOT_FOUND'});return;}
  const html=renderToStaticMarkup(await page.default({params:Promise.resolve({id:OTHER})}));

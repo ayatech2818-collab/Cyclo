@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
 import { displayName, formatDateTime } from "../format";
+import type { ResolvedAvatar } from "@/features/profile/avatar";
+
 import type { EmployeeAdminDetail, EmployeeDirectoryItem } from "../types";
 import { EmployeeAvatar } from "./employee-avatar";
 import { EmployeeStatusBadge, RoleBadge } from "./employee-badges";
@@ -33,10 +35,10 @@ function Card({ title, description, children }: { title: string; description?: s
   );
 }
 
-export function EmployeeHeader({ employee, isSelf }: { employee: EmployeeDirectoryItem; isSelf: boolean }) {
+export function EmployeeHeader({ employee, isSelf, avatar }: { employee: EmployeeDirectoryItem; isSelf: boolean; avatar?: ResolvedAvatar | null }) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-      <EmployeeAvatar fullName={employee.fullName} email={employee.email} avatarUrl={employee.avatarUrl} size="lg" />
+      <EmployeeAvatar fullName={employee.fullName} email={employee.email} avatarUrl={employee.avatarUrl} avatar={avatar} size="lg" />
       <div className="min-w-0">
         <h1 className="truncate text-2xl font-semibold tracking-tight">
           {displayName(employee.fullName, employee.email)}

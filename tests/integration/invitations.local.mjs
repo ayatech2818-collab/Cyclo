@@ -16,7 +16,7 @@ async function user(name,role){
  const email='phase5-'+run+'-'+name+'@cyclo.test';
  const r=await admin.auth.admin.createUser({email,password,email_confirm:true});assert.equal(r.error,null);
  const id=r.data.user.id,client=createClient(url,key,options);people[name]={id,email,client};
- const update=await admin.from('profiles').update({role,full_name:'Phase5 '+name}).eq('id',id);assert.equal(update.error,null);
+ const update=await admin.from('profiles').update({role,is_active:true,full_name:'Phase5 '+name}).eq('id',id);assert.equal(update.error,null);
  const login=await client.auth.signInWithPassword({email,password});assert.equal(login.error,null);
 }
 async function reserve(name,role='DEVELOPER'){

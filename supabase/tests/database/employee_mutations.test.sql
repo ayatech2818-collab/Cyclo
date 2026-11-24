@@ -5,6 +5,8 @@ select no_plan();
 insert into auth.users(instance_id,id,aud,role,email,encrypted_password,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
 select '00000000-0000-0000-0000-000000000000', ('40000000-0000-4000-a000-'||lpad(n::text,12,'0'))::uuid,
 'authenticated','authenticated','phase4-'||n||'@pgtap.test','','{}','{"role":"SUPER_ADMIN"}',now(),now() from generate_series(1,5) n;
+-- Phase 7 H1: uninvited accounts are created inactive; fixtures are activated explicitly.
+update public.profiles set is_active=true where id::text like '40000000-0000-4000-a000-%';
 update public.profiles set role='SUPER_ADMIN' where id in ('40000000-0000-4000-a000-000000000001','40000000-0000-4000-a000-000000000002','40000000-0000-4000-a000-000000000005');
 update public.profiles set role='PROJECT_MANAGER' where id='40000000-0000-4000-a000-000000000003';
 update public.profiles set is_active=false where id='40000000-0000-4000-a000-000000000005';
@@ -95,7 +97,7 @@ select lives_ok($q$select public.admin_set_employee_role('40000000-0000-4000-a00
 reset role; select set_config('request.jwt.claims','{"sub":"40000000-0000-4000-a000-000000000001","role":"authenticated"}',true); set local role authenticated;
 select throws_ok($q$select public.admin_set_git_organizer('40000000-0000-4000-a000-000000000004',false)$q$,'42501','forbidden','demoted caller immediately denied');
 reset role; select set_config('request.jwt.claims','{"sub":"40000000-0000-4000-a000-000000000004","role":"authenticated"}',true); set local role authenticated;
-select lives_ok($q$update public.profiles set full_name='SPOOF' where id='40000000-0000-4000-a000-000000000003'$q$,'non-admin update to other row affects zero rows');
+select throws_ok($q$update public.profiles set full_name='SPOOF' where id='40000000-0000-4000-a000-000000000003'$q$,'42501',null,'non-admin direct update denied outright (no UPDATE privilege)');
 reset role;
 select isnt((select full_name from public.profiles where id='40000000-0000-4000-a000-000000000003'),'SPOOF','RLS prevents modifying another employee');
 update public.profiles set role='DEVELOPER' where role='SUPER_ADMIN' and id<>'40000000-0000-4000-a000-000000000002';

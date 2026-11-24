@@ -62,7 +62,8 @@ test('HTTP RPC does not accept spoofed actor or arbitrary fields',async()=>{
  for(const extra of [{actor_id:users.sa.id},{p_email:'spoof@test.local'},{p_role:'SUPER_ADMIN'}]){
   const result=await users.dev.client.rpc('admin_set_employee_code',{...args,...extra});assert.ok(result.error);
  }
- const direct=await users.dev.client.from('profiles').update({full_name:'SPOOF'}).eq('id',users.pm.id).select('id');assert.equal(direct.error,null);assert.equal(direct.data.length,0);
+ // Direct profile UPDATE is revoked (20261124120000); it now fails outright.
+ const direct=await users.dev.client.from('profiles').update({full_name:'SPOOF'}).eq('id',users.pm.id).select('id');assert.equal(direct.error?.code,'42501');
  const role=await users.dev.client.from('profiles').update({role:'SUPER_ADMIN'}).eq('id',users.dev.id);assert.equal(role.error?.code,'42501');
 });
 test('active admin performs all five operations through caller session',async()=>{

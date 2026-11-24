@@ -26,6 +26,8 @@ select is((select count(*)::integer from pg_trigger where tgrelid='public.profil
 insert into auth.users(instance_id,id,aud,role,email,encrypted_password,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
 select '00000000-0000-0000-0000-000000000000',('50000000-0000-4000-a000-'||lpad(n::text,12,'0'))::uuid,
 'authenticated','authenticated','security-fix-'||n||'@pgtap.test','','{}','{}',now(),now() from generate_series(1,2)n;
+-- Phase 7 H1: uninvited accounts are created inactive; fixtures are activated explicitly.
+update public.profiles set is_active=true where id::text like '50000000-0000-4000-a000-%';
 update public.profiles set role='SUPER_ADMIN' where id='50000000-0000-4000-a000-000000000001';
 select set_config('request.jwt.claims','{"sub":"50000000-0000-4000-a000-000000000001","role":"authenticated"}',true); set local role authenticated;
 select lives_ok($q$select public.admin_update_employee_details('50000000-0000-4000-a000-000000000002','Name','https://example.com/avatar.png')$q$,'accept standard');

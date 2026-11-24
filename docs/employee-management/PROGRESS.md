@@ -9,8 +9,8 @@ Branch: `feature/employee-onboarding` · Hosted project: `Cyclo` (`jbcvznfxycngy
 | 3 | Employee directory UI (`/employees`, `/employees/[id]`) | **Done locally** (2026-11-21) |
 | 4 | Admin mutations + audit log | **Done locally** (2026-11-21); hosted deployment remains unapproved |
 | 5 | Invitations, invite callback, onboarding + guard | **Done locally** (2026-11-21); hosted deployment unapproved |
-| 6 | Self-profile + avatar storage | Pending |
-| 7 | Full verification + final report | Pending |
+| 6 | Self-profile + avatar selection and storage | **Done locally** (2026-11-24); hosted deployment unapproved |
+| 7 | Full verification + final report | **Review done locally** (2026-11-24); H1 and M1 fixed locally; see `PHASE7_REVIEW.md`. Open: M2–M4, L1–L6; hosted deployment unapproved |
 
 ---
 
@@ -434,3 +434,116 @@ Hosted migration history/deployment approval remain unresolved. The new Admin cl
 - New: supabase/tests/database/employee_invitations.test.sql
 - New: tests/integration/invitations.local.mjs
 - New: tests/invitations.test.mjs
+
+
+---
+
+## Phase 6 — Own profile and avatar selection (local only)
+
+Implemented on 2026-11-24 on `feature/employee-onboarding`. Hosted Supabase was not accessed. Existing migrations were not edited. One forward migration was applied to the local stack with the pinned CLI (`supabase migration up`); no reset.
+
+Also included before Phase 6 (approved separately): `/auth/confirm` now redirects with a host-relative `Location`, so a session created on `127.0.0.1` is not lost on a redirect to `localhost`; `next.config.ts` allows `127.0.0.1` as a dev origin.
+
+### Avatar model
+
+Explicit, validated selection state on `public.profiles`:
+
+| Column | Meaning |
+| --- | --- |
+| `avatar_kind` | `default` (admin `avatar_url`, else initials) · `initials` · `image` · `emoji` · `icon`; default `default` |
+| `avatar_symbol` | Allowlisted emoji or Lucide icon **identifier** (e.g. `fox`, `git-branch`) when kind is emoji/icon; NULL otherwise. Never markup, URLs or free text |
+| `avatar_path` | Object name in the private `avatars` bucket, exactly `<profile id>/<uuid>.<jpg\|png\|webp>`; never a URL |
+
+Display priority (resolved on the server): uploaded image → emoji/icon → administrator `avatar_url` (only while kind is `default`) → initials. Choosing `initials` is an explicit choice and also hides an admin URL. Switching to emoji/icon/initials keeps an uploaded photo so the employee can switch back; "Remove photo" deletes it.
+
+CHECK constraints enforce the kind list, the symbol allowlists, the per-owner path shape and "image requires a path" for every writer. They call no functions, so Auth triggers and existing grants are unaffected. The 24 emoji and 24 icon identifiers are duplicated in `src/features/profile/avatar-catalog.ts`; a unit test fails if the two lists differ.
+
+### Storage
+
+- Bucket `avatars`: private, 2 MiB limit, `image/jpeg`, `image/png`, `image/webp` only (no SVG/GIF).
+- `storage.objects` policies (authenticated, active employees only via `private.current_app_role()`):
+  - INSERT only to `<own uid>/<uuid>.<ext>`.
+  - SELECT own objects, or any avatar for active Super Admins / Project Managers (directory rule).
+  - DELETE own objects only.
+  - No UPDATE policy, so uploads can never overwrite.
+- Images are served only through short-lived (1 hour) signed URLs created on the server with the viewer's own session. The app accepts a signed URL only if it points at this project's `/storage/v1/object/sign/avatars/` endpoint.
+
+### RPCs
+
+Public SECURITY INVOKER wrappers; private SECURITY DEFINER implementations owned by `cyclo_employee_api` (created with the temporary `SET ROLE` pattern from the Phase 4 hardening migration). No RPC accepts an employee or actor id.
+
+| RPC | Authorization / behaviour |
+| --- | --- |
+| `get_employee_avatars(uuid[])` | Any active employee. SA/PM receive any requested ids (max 100); everyone else receives only their own row |
+| `update_my_profile(text)` | Own full name; trimmed, 1–200 chars; audited `SELF_PROFILE_UPDATED` |
+| `set_my_avatar(text, text)` | `default`/`initials`/`emoji`/`icon`, or `image` when a photo is already attached; audited `SELF_AVATAR_UPDATED` |
+| `set_my_avatar_image(text)` | Attaches an object that exists in the bucket, in the caller's folder, **owned by the caller** (checked through `private.my_avatar_object_exists`, a postgres-owned bridge executable only by the RPC owner); returns the previous path |
+| `remove_my_avatar_image()` | Detaches the photo (image → default); returns the previous path |
+
+All writes lock the caller's row and re-check that the caller is still active after the lock. No-op changes skip both update and audit. Self audits must target the actor (constraint). The RPC owner gained UPDATE only on the three new columns. Role, active status, employee code, Git Organizer, email, invitation and onboarding fields are never written by Phase 6 code. Phase 4 admin `avatar_url` management and its RPC are unchanged.
+
+### Application
+
+| File | Purpose |
+| --- | --- |
+| `supabase/migrations/20261124100000_own_profile_avatars.sql` | Columns, constraints, bucket, storage policies, bridge, RPCs, audit actions |
+| `src/features/profile/avatar-catalog.ts`, `avatar-icons.tsx` | Curated emoji/icon allowlists and static icon map |
+| `src/features/profile/avatar.ts` | State parser (fails closed), display priority, signed-URL trust check, file-signature validation |
+| `src/features/profile/avatars.server.ts` | Batch avatar reads and signed URLs; failures fall back to initials |
+| `src/features/profile/mutations.server.ts`, `actions.ts`, `errors.ts` | Server Actions: name, selection, upload (server-generated path; client name/type ignored; magic-byte check; orphan cleanup), remove |
+| `src/features/profile/components/profile-forms.tsx` | Name form and Photo / Emoji / Icon / Initials picker |
+| `src/app/(dashboard)/profile/page.tsx` | `/profile` for every active employee; account fields are read-only |
+| Header, directory table, employee detail, `EmployeeAvatar` | Render the resolved avatar; without one, Phase 3/4 rendering is unchanged |
+| `next.config.ts` | Server Action body limit 3 MB (upload limit is 2 MB) |
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `pnpm lint` | Pass |
+| `pnpm typecheck` | Pass |
+| `pnpm test` | 164/164 (150 existing + 14 new) |
+| `pnpm test:db` | 280/280 in five files (187 existing + 93 new) |
+| `pnpm test:integration` | 87/87 (82 existing + 5 new, real Storage uploads) |
+| `pnpm build` | Pass (`/profile` route added) |
+| Local `db lint` | No errors; only the two pre-existing Phase 5 unused-variable warnings |
+| Browser (production build on 127.0.0.1:3105) | Developer: emoji, icon and photo upload update the header and profile; a disguised SVG named `.png` is rejected; photo kept after switching to an icon. Admin: directory shows the developer's icon. Phone width 375px with no horizontal scroll. No console errors |
+
+Existing tests changed only additively: the detail-page test mocks the new avatar loader (and asserts it is not called for Developers), and the TS test loader exposes `File`, `Blob` and `crypto`. Integration fixtures, their objects and audit rows were removed; local data still has 30 profiles with fingerprint `9a6ebfe6d7a88ed5bdd80c336b94ca1c` and 39 audit rows. Browser verification left the seeded `dev@cyclo.test` account with an icon avatar, one uploaded photo and three `SELF_AVATAR_UPDATED` audit rows.
+
+### Open items for Phase 7
+
+- Uploaded photos keep their embedded metadata (EXIF, possibly location). Stripping it needs image re-encoding; deferred.
+- Avatars of deactivated employees remain in Storage (visible to SA/PM only).
+- Hosted deployment of all migrations and the bucket remains unapproved.
+
+
+### Follow-up: direct self-updates revoked (approved 2026-11-24)
+
+Migration `20261124120000_revoke_direct_profile_updates.sql` (applied locally) revokes UPDATE on `public.profiles` from `authenticated` (the Phase 1 `full_name`/`avatar_url` column grant and any table-level UPDATE) and drops the now-unreachable policy "Active employees can update their own profile". Self-service edits now go only through the audited RPCs; Super Admins keep the Phase 4 admin RPCs. No application code used the direct path.
+
+Four existing assertions changed meaning on purpose, each now asserting the stricter behaviour: Phase 2 pgTAP (grant now absent; own-row direct update now denied and the name changes through `update_my_profile`; plan 53 → 55), Phase 4 pgTAP (direct update of another row now fails with 42501 instead of affecting zero rows), the Phase 4 integration test (same), and the Phase 6 pgTAP grant checks. New checks cover direct `full_name`/`avatar_url` writes over SQL and HTTP.
+
+| Check | Result |
+| --- | --- |
+| `pnpm lint` / `pnpm typecheck` | Pass |
+| `pnpm test` | 164/164 |
+| `pnpm test:db` | 286/286 |
+| `pnpm test:integration` | 87/87 |
+| `pnpm build` | Pass |
+
+Local data: 30 profiles (same fingerprint); 42 audit rows (39 before Phase 6 plus the three browser-verification rows for `dev@cyclo.test`).
+
+
+---
+
+## Phase 7 — Final review (local only)
+
+Full report: [PHASE7_REVIEW.md](PHASE7_REVIEW.md).
+
+- Review: all suites, migration replay, advisors, dependency audit, bundle secret scan, route × role matrix. Findings: 1 High, 4 Medium, 6 Low, 5 Info.
+- Approved fixes applied locally on 2026-11-24:
+  - **H1**: migration `20261124140000_uninvited_accounts_inactive.sql`. Accounts created without a database invitation get an inactive DEVELOPER profile; metadata ignored; existing profiles unchanged.
+  - **M1**: security headers in `next.config.ts` (CSP `frame-ancestors 'none'` and friends, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy; X-Powered-By removed).
+- Final results: lint and typecheck pass; unit 164/164; database 315/315; integration 98/98; production build pass; no security advisories.
+- Still open (need approval): M2 deployment guards, M3 hosted migrations, M4 password policy, HSTS / script CSP, L1–L6. No commit, push, merge or deployment.

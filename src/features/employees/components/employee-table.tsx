@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { displayName } from "../format";
+import type { ResolvedAvatar } from "@/features/profile/avatar";
+
 import type { EmployeeDirectoryItem } from "../types";
 import { EmployeeAvatar } from "./employee-avatar";
 import { EmployeeStatusBadge, RoleBadge } from "./employee-badges";
@@ -18,7 +20,16 @@ function YouTag({ show }: { show: boolean }) {
  * Directory listing. Only directory DTO fields are available here, so
  * administrative data cannot be rendered by mistake.
  */
-export function EmployeeTable({ employees, currentUserId }: { employees: EmployeeDirectoryItem[]; currentUserId: string }) {
+export function EmployeeTable({
+  employees,
+  currentUserId,
+  avatars = {},
+}: {
+  employees: EmployeeDirectoryItem[];
+  currentUserId: string;
+  /** Server-resolved avatar selections keyed by employee id (Phase 6). */
+  avatars?: Record<string, ResolvedAvatar>;
+}) {
   return (
     <>
       {/* Tablet and desktop */}
@@ -41,7 +52,7 @@ export function EmployeeTable({ employees, currentUserId }: { employees: Employe
                 <tr key={employee.id} className="hover:bg-surface-muted/60">
                   <td className="px-4 py-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <EmployeeAvatar fullName={employee.fullName} email={employee.email} avatarUrl={employee.avatarUrl} />
+                      <EmployeeAvatar fullName={employee.fullName} email={employee.email} avatarUrl={employee.avatarUrl} avatar={avatars[employee.id]} />
                       <div className="min-w-0">
                         <p className="truncate font-medium text-text-primary">
                           {name}
@@ -82,7 +93,7 @@ export function EmployeeTable({ employees, currentUserId }: { employees: Employe
                 aria-label={`View details for ${name}`}
                 className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm hover:border-primary/40"
               >
-                <EmployeeAvatar fullName={employee.fullName} email={employee.email} avatarUrl={employee.avatarUrl} />
+                <EmployeeAvatar fullName={employee.fullName} email={employee.email} avatarUrl={employee.avatarUrl} avatar={avatars[employee.id]} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">
                     {name}
