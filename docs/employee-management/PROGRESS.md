@@ -1,6 +1,6 @@
 # Employee Management — Implementation Progress
 
-Branch: `feature/employee-management-actions` · Hosted project: `Cyclo` (`jbcvznfxycngysxwtbsz`)
+Branch: `feature/employee-onboarding` · Hosted project: `Cyclo` (`jbcvznfxycngysxwtbsz`)
 
 | Phase | Scope | Status |
 | --- | --- | --- |
@@ -8,7 +8,7 @@ Branch: `feature/employee-management-actions` · Hosted project: `Cyclo` (`jbcvz
 | 2 | Secure read RPCs, DTOs, queries, column-grant narrowing | **Done locally** (2026-11-20); hosted apply pending approval |
 | 3 | Employee directory UI (`/employees`, `/employees/[id]`) | **Done locally** (2026-11-21) |
 | 4 | Admin mutations + audit log | **Done locally** (2026-11-21); hosted deployment remains unapproved |
-| 5 | Invitations, invite callback, onboarding + guard | Pending |
+| 5 | Invitations, invite callback, onboarding + guard | **Done locally** (2026-11-21); hosted deployment unapproved |
 | 6 | Self-profile + avatar storage | Pending |
 | 7 | Full verification + final report | Pending |
 
@@ -319,3 +319,118 @@ The one existing application-test expectation changed intentionally: a whitespac
 Both findings are closed by source review and behavioral regressions. The original 28 profiles remain with the same sorted-ID fingerprint (f4b8b85720012a438cf60b99fca4c9b7), and all 32 pre-existing audit records remain. New integration users/profiles and their disposable audit rows are removed after the suite using trusted local fixture cleanup; ordinary users still have no audit DELETE access. Existing demo avatar URLs were all NULL, so no existing nonempty URL was rejected or rewritten. The last-admin counter remains consistent.
 
 Docker was initially unavailable; the installed Docker Desktop engine was brought online and all database/integration checks above were actually executed. No reset or hosted connection was used. Existing repository HEAD changed externally to 0e0bf07 during the task; those changes, including theme work, were preserved. This follow-up remains uncommitted. No commit, push, merge, hosted change or Phase 5 work was performed by this task.
+
+
+---
+
+## Phase 5 — Invitations and onboarding (local only)
+
+Implemented on the current feature/employee-onboarding branch. Existing migrations and existing profile data were preserved. The current Auth/profile access projection remains unchanged: existing active employees, including an administrator with NULL full_name/onboarded_at, are not forced into onboarding. No hosted profile backfill or email-specific bypass was introduced.
+
+### Migrations and RPCs
+
+- 20261121101643_employee_invitations_onboarding.sql: private invitation authority, uniqueness, immutable email/name/assigned-role/inviter, lifecycle/delivery timestamps, existing audit extension, trusted Auth identity bridge, trigger integration and scoped RPCs.
+- 20261121103439_invitation_acceptance_expiry_guard.sql: wall-clock expiry and fresh confirmed-email binding after invitation lock acquisition.
+- 20261121103735_invitation_resend_recovery.sql: preserves ACCEPTED/ONBOARDING state on resend to recover a lost browser session without acceptance replay.
+
+Public SECURITY INVOKER wrappers backed by private SECURITY DEFINER implementations owned by cyclo_employee_api:
+
+| RPC | Authorization / purpose |
+| --- | --- |
+| admin_create_employee_invitation | Active Super Admin; normalized input, existing-account and duplicate-pending rejection, reservation plus audit |
+| admin_list_employee_invitations | Active Super Admin; up to 200 recent fixed DTOs |
+| admin_resend_employee_invitation | Active Super Admin; renew expiry, preserve recovery state, audit |
+| admin_revoke_employee_invitation | Active Super Admin; terminal revoke and audit |
+| admin_record_invitation_delivery | Active Super Admin; safe delivery outcome, no raw provider errors |
+| get_my_employee_invitation | Confirmed Auth user; own normalized email and linked UUID only |
+| accept_employee_invitation | Confirmed invitee; locked PENDING → ACCEPTED, rejects expired/revoked/replay |
+| start_employee_onboarding | Own ACCEPTED invitation and actual Auth password presence |
+| complete_employee_onboarding | Own ONBOARDING invitation; atomically complete record, set name/onboarded_at, preserve role and activate |
+
+Every privileged database function keeps an empty search_path and explicit EXECUTE grants. The private schema is not exposed. No direct invitation table privileges were granted to authenticated/anon/service_role. Actor identity comes from the trusted auth.uid() bridge; Auth confirmation/password presence are read only through a private postgres-owned Auth bridge. No credentials, hashes or tokens are exposed to callers or audits.
+
+### Trigger and access security
+
+The Auth user insert trigger links matching pending invitations by normalized email, copies the database-authoritative role/name/inviter and creates an inactive requires_onboarding profile. Editable Auth metadata is ignored. Unmatched Auth invitations are rejected. Non-invitation provisioning retains the previous default behavior.
+
+A new profile guard prevents activation, invitation-role replacement, inviter changes and Git Organizer escalation before successful onboarding. Existing active profiles have requires_onboarding=false, with no other fields changed. Only the new scoped completion RPC clears that flag and sets onboarding time. The existing last-active-Super-Admin triggers/counter are unchanged.
+
+The function-owner role gains only the extra onboarding timestamp/flag UPDATE columns required for atomic completion. One Phase 4 assertion expecting no owner UPDATE on onboarded_at was replaced with an explicit owner-grant assertion plus ordinary-authenticated denial. Two direct RPC assertions now verify Phase 4 activation/role operations cannot bypass invitation authority. No authenticated column grants were broadened; the test expectation changed to reflect the new scoped capability rather than hiding a failure.
+
+### Application workflow
+
+Employees now links active Super Admins to /employees/invitations, with invite form, status/expiry, delivery feedback, resend and revoke. PM/Developer requests fail before querying invitation records. The existing directory and restricted DTOs remain intact.
+
+The server-only Auth Admin client checks authorization before every Admin send, accepts the SDK's modern secret key or local legacy service-role JWT and rejects non-loopback Supabase targets pending deployment approval. Initial/unverified emails use inviteUserByEmail; verified incomplete accounts use Auth-generated signInWithOtp resume emails, because Auth will not re-invite verified accounts. There is no manual email system or Nodemailer.
+
+/auth/confirm validates invite/email token hashes with Supabase, writes the SSR session and accepts or resumes only the caller's valid invitation. It ignores arbitrary next URLs and signs out when database acceptance fails. /onboarding sets the password via Auth; /onboarding/complete collects only full name. Login can resume a valid accepted/in-progress invitation; normal routes remain denied until completion. Replayed tokens and state transitions fail. Concurrent completion permits one winner.
+
+Email delivery cannot be in the database transaction. Failed delivery leaves a recoverable reservation with safe feedback. The database still rejects a revoked/expired invitation even if an Auth email was already sent or verified. Expiration is effective from expires_at in DTOs and mutation checks without requiring a scheduled job.
+
+### Files and environment
+
+Implementation files: src/features/invitations/{types,validation,errors,operations.server,actions,onboarding.server,onboarding-actions,forms}; src/lib/supabase/admin.server.ts; callback/onboarding/invitation routes; existing auth actions/proxy, login messaging and Employees link; generated src/types/database.ts. Local config/template changes are in supabase/config.toml and supabase/templates/{invite,onboarding-resume}.html. .env.example contains placeholders only; scripts/dev-local.mjs maps local server credentials without exposing them publicly.
+
+Exact variables: existing NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY; new server-only SUPABASE_SECRET_KEY and CYCLO_APP_URL. The local runner maps local status SECRET_KEY/SERVICE_ROLE_KEY and the selected local port automatically. No Gmail/SMTP application variables or credentials are needed. The deployment guard remains local-only until explicit hosted deployment approval.
+
+See INVITATIONS.md for local use, test-server setup, complete lifecycle/security notes and future Gmail SMTP preparation. Future SMTP belongs in Supabase Dashboard → Authentication → SMTP Settings: smtp.gmail.com, port 465, SSL/TLS, authorized full Gmail username, Google App Password, matching sender. Google 2-Step Verification and account eligibility are documented. No hosted Auth/SMTP/template/redirect setting was changed.
+
+### Verification
+
+| Check | Final result |
+| --- | --- |
+| pnpm lint | Pass, zero ESLint warnings |
+| pnpm typecheck | Pass |
+| pnpm test | 149/149 pass, zero skipped |
+| pnpm test:db | 187/187 pass in four files |
+| pnpm test:integration | 82/82 pass, zero skipped |
+| pnpm build | Pass with explicit local Supabase configuration |
+| Local security advisors | No issues |
+| Local SQL lint | No errors; two unused-variable warnings (get_my_employee_invitation.v_unused and lock_my_invitation.v_password) |
+| Git diff whitespace check | Pass |
+
+New focused coverage: 18 invitation/action/callback/UI/legacy-auth unit tests, one proxy allowlist test, 27 invitation pgTAP assertions and eight real Auth/Mailpit/app integration tests. The integration suite includes posting the rendered invitation Server Action, captured local email links, callback cookie/session establishment, selected Super Admin role, pre-onboarding route denial, replay rejection, expired/revoked denial, state-preserving resend recovery, concurrent completion and expiry during a row-lock wait.
+
+The original 28 local profiles remain with sorted-ID fingerprint f4b8b85720012a438cf60b99fca4c9b7. The original 32 audit records remain; invitation fixtures, their Auth users/profiles, disposable audit rows and Mailpit messages were removed. The Super Admin counter is consistent. Docker/local Auth was restarted with data-preserving CLI stop/start to load local email templates; no db reset was run. An existing process on port 3000 was preserved, and the isolated verification server used port 3105.
+
+### Remaining decisions and handoff
+
+Hosted migration history/deployment approval remain unresolved. The new Admin client deliberately refuses hosted targets. Gmail production SMTP and Auth templates/redirect configuration are documented for later approval, not configured here. The two SQL lint warnings are nonfunctional unused-variable diagnostics; applied migrations were kept immutable. No Phase 6 avatar upload work was performed. No commit, push or merge was performed.
+
+### Final uncommitted file inventory
+
+- Modified: .env.example
+- Modified: docs/employee-management/PROGRESS.md
+- Modified: scripts/dev-local.mjs
+- Modified: src/app/(auth)/login/page.tsx
+- Modified: src/app/(dashboard)/employees/page.tsx
+- Modified: src/features/auth/actions.ts
+- Modified: src/lib/supabase/proxy.ts
+- Modified: src/types/database.ts
+- Modified: supabase/config.toml
+- Modified: supabase/tests/database/employee_mutations.test.sql
+- Modified: tests/helpers/load-ts-module.mjs
+- Modified: tests/ssr-proxy.test.mjs
+- New: docs/employee-management/INVITATIONS.md
+- New: src/app/(dashboard)/employees/invitations/page.tsx
+- New: src/app/auth/confirm/route.ts
+- New: src/app/onboarding/complete/page.tsx
+- New: src/app/onboarding/layout.tsx
+- New: src/app/onboarding/page.tsx
+- New: src/features/invitations/actions.ts
+- New: src/features/invitations/errors.ts
+- New: src/features/invitations/forms.tsx
+- New: src/features/invitations/onboarding-actions.ts
+- New: src/features/invitations/onboarding.server.ts
+- New: src/features/invitations/operations.server.ts
+- New: src/features/invitations/types.ts
+- New: src/features/invitations/validation.ts
+- New: src/lib/supabase/admin.server.ts
+- New: supabase/migrations/20261121101643_employee_invitations_onboarding.sql
+- New: supabase/migrations/20261121103439_invitation_acceptance_expiry_guard.sql
+- New: supabase/migrations/20261121103735_invitation_resend_recovery.sql
+- New: supabase/templates/invite.html
+- New: supabase/templates/onboarding-resume.html
+- New: supabase/tests/database/employee_invitations.test.sql
+- New: tests/integration/invitations.local.mjs
+- New: tests/invitations.test.mjs

@@ -33,7 +33,7 @@ export function loadTsModule(entry, mocks = {}) {
       fileName: file,
     }).outputText;
     runInNewContext(output, {
-      module: mod, exports: mod.exports, console, URL, URLSearchParams, Intl, Date, Math, Number, Promise, Error,
+      module: mod, exports: mod.exports, console, URL, URLSearchParams, Intl, Date, Math, Number, Promise, Error, TextEncoder,
       require(specifier) {
         if (Object.hasOwn(mocks, specifier)) return mocks[specifier];
         if (specifier.startsWith(".") || specifier.startsWith("@/")) {

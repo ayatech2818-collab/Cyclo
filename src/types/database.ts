@@ -10,14 +10,14 @@ export type Database = {
           Tables: {
             "profiles": {
                   Row: {
-                    "avatar_url": string | null,"created_at": string,"email": string | null,"employee_code": string | null,"full_name": string | null,"id": string,"invited_by": string | null,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string | null,"role": Database["public"]['Enums']["app_role"],"updated_at": string
+                    "avatar_url": string | null,"created_at": string,"email": string | null,"employee_code": string | null,"full_name": string | null,"id": string,"invited_by": string | null,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string | null,"requires_onboarding": boolean,"role": Database["public"]['Enums']["app_role"],"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "avatar_url"?: string | null,"created_at"?: string,"email"?: string | null,"employee_code"?: string | null,"full_name"?: string | null,"id": string,"invited_by"?: string | null,"is_active"?: boolean,"is_git_organizer"?: boolean,"onboarded_at"?: string | null,"role"?: Database["public"]['Enums']["app_role"],"updated_at"?: string
+                    "avatar_url"?: string | null,"created_at"?: string,"email"?: string | null,"employee_code"?: string | null,"full_name"?: string | null,"id": string,"invited_by"?: string | null,"is_active"?: boolean,"is_git_organizer"?: boolean,"onboarded_at"?: string | null,"requires_onboarding"?: boolean,"role"?: Database["public"]['Enums']["app_role"],"updated_at"?: string
                   }
                   Update: {
-                    "avatar_url"?: string | null,"created_at"?: string,"email"?: string | null,"employee_code"?: string | null,"full_name"?: string | null,"id"?: string,"invited_by"?: string | null,"is_active"?: boolean,"is_git_organizer"?: boolean,"onboarded_at"?: string | null,"role"?: Database["public"]['Enums']["app_role"],"updated_at"?: string
+                    "avatar_url"?: string | null,"created_at"?: string,"email"?: string | null,"employee_code"?: string | null,"full_name"?: string | null,"id"?: string,"invited_by"?: string | null,"is_active"?: boolean,"is_git_organizer"?: boolean,"onboarded_at"?: string | null,"requires_onboarding"?: boolean,"role"?: Database["public"]['Enums']["app_role"],"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -34,9 +34,39 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "admin_get_employee":
+            "accept_employee_invitation":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
+            }[]
+                           },
+"admin_create_employee_invitation":
+{ Args: { "p_email": string,"p_full_name": string,"p_role": Database["public"]['Enums']["app_role"] }; Returns: {
+              "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
+            }[]
+                           },
+"admin_get_employee":
 { Args: { "p_employee_id": string }; Returns: {
               "avatar_url": string,"created_at": string,"email": string,"employee_code": string,"full_name": string,"id": string,"invited_by": string,"invited_by_name": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
+            }[]
+                           },
+"admin_list_employee_invitations":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
+            }[]
+                           },
+"admin_record_invitation_delivery":
+{ Args: { "p_invitation_id": string,"p_success": boolean }; Returns: {
+              "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
+            }[]
+                           },
+"admin_resend_employee_invitation":
+{ Args: { "p_invitation_id": string }; Returns: {
+              "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
+            }[]
+                           },
+"admin_revoke_employee_invitation":
+{ Args: { "p_invitation_id": string }; Returns: {
+              "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
             }[]
                            },
 "admin_set_employee_active":
@@ -64,9 +94,19 @@ isOneToOne: false
               "avatar_url": string,"created_at": string,"email": string,"employee_code": string,"full_name": string,"id": string,"invited_by": string,"invited_by_name": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
             }[]
                            },
+"complete_employee_onboarding":
+{ Args: { "p_full_name": string }; Returns: {
+              "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
+            }[]
+                           },
 "get_employee":
 { Args: { "p_employee_id": string }; Returns: {
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"]
+            }[]
+                           },
+"get_my_employee_invitation":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
             }[]
                            },
 "get_my_profile":
@@ -77,6 +117,11 @@ isOneToOne: false
 "list_employees":
 { Args: { "p_is_active"?: boolean,"p_page"?: number,"p_page_size"?: number,"p_role"?: Database["public"]['Enums']["app_role"],"p_search"?: string }; Returns: {
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"],"total_count": number
+            }[]
+                           },
+"start_employee_onboarding":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
             }[]
                            }
           }

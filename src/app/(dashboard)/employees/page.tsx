@@ -80,6 +80,7 @@ export default async function EmployeesPage({ searchParams }: {
             : "Search the employee directory."}
         </p>
       </div>
+      {profile.role === "SUPER_ADMIN" && <Link href="/employees/invitations" className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover">Invite Employee · Manage invitations</Link>}
       <EmployeeFilters query={query} />
       {body}
     </main>

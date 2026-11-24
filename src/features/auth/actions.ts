@@ -25,6 +25,7 @@ async function signIn(formData: FormData): Promise<{ error: string | null }> {
   if ("error" in credentials) return { error: credentials.error };
 
   const supabase = await createClient();
+  let destination = "/dashboard";
   try {
     const { error } = await supabase.auth.signInWithPassword(credentials);
     if (error) {
@@ -37,14 +38,22 @@ async function signIn(formData: FormData): Promise<{ error: string | null }> {
 
     const access = await getAccess(supabase);
     if (access.status !== "authorized") {
-      // Discard the newly created session when application authorization fails.
-      const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
-      if (signOutError) return { error: "Access was denied. Session cleanup failed; please try signing out again." };
-      return {
-        error: access.status === "unavailable"
-          ? "Unable to verify your profile. Please try again."
-          : "Your account does not have active CYCLO access. Contact your administrator.",
-      };
+      // Resume only a confirmed user's own accepted/in-progress invitation.
+      // Inactive accounts without a valid invitation still fail closed.
+      const invitation = await supabase.rpc("get_my_employee_invitation");
+      const own = invitation.error ? null : invitation.data?.[0];
+      if (own && ["ACCEPTED", "ONBOARDING"].includes(own.status)) {
+        destination = own.status === "ONBOARDING" ? "/onboarding/complete" : "/onboarding";
+      } else {
+        // Discard the newly created session when application authorization fails.
+        const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+        if (signOutError) return { error: "Access was denied. Session cleanup failed; please try signing out again." };
+        return {
+          error: access.status === "unavailable"
+            ? "Unable to verify your profile. Please try again."
+            : "Your account does not have active CYCLO access. Contact your administrator.",
+        };
+      }
     }
   } catch {
     return { error: "Sign-in is temporarily unavailable. Please try again." };
@@ -52,7 +61,7 @@ async function signIn(formData: FormData): Promise<{ error: string | null }> {
 
   // Redirect throws internally, so keep it outside the error handler.
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect(destination);
 }
 
 export async function logout(): Promise<void> {
