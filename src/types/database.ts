@@ -28,6 +28,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"projects": {
+                  Row: {
+                    "archived_at": string | null,"created_at": string,"created_by": string,"description": string | null,"id": string,"name": string,"priority": Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_id": string,"start_date": string | null,"status": Database["public"]['Enums']["project_status"],"target_date": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"created_at"?: string,"created_by": string,"description"?: string | null,"id"?: string,"name": string,"priority"?: Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_id": string,"start_date"?: string | null,"status"?: Database["public"]['Enums']["project_status"],"target_date"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"created_at"?: string,"created_by"?: string,"description"?: string | null,"id"?: string,"name"?: string,"priority"?: Database["public"]['Enums']["project_priority"],"project_key"?: string,"project_manager_id"?: string,"start_date"?: string | null,"status"?: Database["public"]['Enums']["project_status"],"target_date"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "projects_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "projects_project_manager_id_fkey"
+      columns: ["project_manager_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -94,10 +120,19 @@ isOneToOne: false
               "avatar_url": string,"created_at": string,"email": string,"employee_code": string,"full_name": string,"id": string,"invited_by": string,"invited_by_name": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
             }[]
                            },
+"archive_project":
+{ Args: { "p_project_id": string }; Returns: string
+                           },
+"assign_project_manager":
+{ Args: { "p_project_id": string,"p_project_manager_id": string }; Returns: string
+                           },
 "complete_employee_onboarding":
 { Args: { "p_full_name": string }; Returns: {
               "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
             }[]
+                           },
+"create_project":
+{ Args: { "p_description"?: string,"p_name": string,"p_priority": Database["public"]['Enums']["project_priority"],"p_project_key": string,"p_project_manager_id"?: string,"p_start_date"?: string,"p_target_date"?: string }; Returns: string
                            },
 "get_employee":
 { Args: { "p_employee_id": string }; Returns: {
@@ -119,15 +154,33 @@ isOneToOne: false
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"]
             }[]
                            },
+"get_project":
+{ Args: { "p_project_id": string }; Returns: {
+              "archived_at": string,"created_at": string,"created_by": string,"created_by_name": string,"description": string,"id": string,"name": string,"priority": Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_email": string,"project_manager_id": string,"project_manager_is_active": boolean,"project_manager_name": string,"start_date": string,"status": Database["public"]['Enums']["project_status"],"target_date": string,"updated_at": string
+            }[]
+                           },
 "list_employees":
 { Args: { "p_is_active"?: boolean,"p_page"?: number,"p_page_size"?: number,"p_role"?: Database["public"]['Enums']["app_role"],"p_search"?: string }; Returns: {
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"],"total_count": number
+            }[]
+                           },
+"list_project_manager_options":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "email": string,"full_name": string,"id": string
+            }[]
+                           },
+"list_projects":
+{ Args: { "p_archived"?: boolean,"p_page"?: number,"p_page_size"?: number,"p_priority"?: Database["public"]['Enums']["project_priority"],"p_search"?: string,"p_sort"?: string,"p_status"?: Database["public"]['Enums']["project_status"] }; Returns: {
+              "archived_at": string,"created_at": string,"description": string,"id": string,"name": string,"priority": Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_id": string,"project_manager_name": string,"start_date": string,"status": Database["public"]['Enums']["project_status"],"target_date": string,"total_count": number,"updated_at": string
             }[]
                            },
 "remove_my_avatar_image":
 { Args: Record<PropertyKey, never>; Returns: {
               "avatar_kind": string,"avatar_path": string,"avatar_symbol": string,"previous_path": string
             }[]
+                           },
+"restore_project":
+{ Args: { "p_project_id": string }; Returns: string
                            },
 "set_my_avatar":
 { Args: { "p_kind": string,"p_symbol"?: string }; Returns: {
@@ -148,10 +201,13 @@ isOneToOne: false
 { Args: { "p_full_name": string }; Returns: {
               "full_name": string
             }[]
+                           },
+"update_project":
+{ Args: { "p_description"?: string,"p_name": string,"p_priority": Database["public"]['Enums']["project_priority"],"p_project_id": string,"p_start_date"?: string,"p_status": Database["public"]['Enums']["project_status"],"p_target_date"?: string }; Returns: string
                            }
           }
           Enums: {
-            "app_role": "SUPER_ADMIN"|"PROJECT_MANAGER"|"DEVELOPER"
+            "app_role": "SUPER_ADMIN"|"PROJECT_MANAGER"|"DEVELOPER","project_priority": "low"|"medium"|"high"|"critical","project_status": "planning"|"active"|"on_hold"|"completed"|"cancelled"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -267,7 +323,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "app_role": ["SUPER_ADMIN", "PROJECT_MANAGER", "DEVELOPER"]
+            "app_role": ["SUPER_ADMIN", "PROJECT_MANAGER", "DEVELOPER"],"project_priority": ["low", "medium", "high", "critical"],"project_status": ["planning", "active", "on_hold", "completed", "cancelled"]
           }
         }
 } as const
