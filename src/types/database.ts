@@ -204,6 +204,11 @@ isOneToOne: false
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"],"total_count": number
             }[]
                            },
+"list_project_activity":
+{ Args: { "p_before_created_at"?: string,"p_before_id"?: string,"p_limit"?: number,"p_project_id": string }; Returns: {
+              "action": string,"actor_avatar_kind": string,"actor_avatar_symbol": string,"actor_id": string,"actor_name": string,"changes": Json,"created_at": string,"id": string,"previous_subject_name": string,"subject_name": string
+            }[]
+                           },
 "list_project_manager_options":
 { Args: Record<PropertyKey, never>; Returns: {
               "email": string,"full_name": string,"id": string

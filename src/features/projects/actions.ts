@@ -7,7 +7,8 @@ import { requireActiveProfile } from "@/features/auth/server";
 
 import { PROJECT_ERROR_FIELDS, ProjectError } from "./errors";
 import { addProjectMember, assignProjectManager, createProject, removeProjectMember, setProjectArchived, updateProject } from "./mutations.server";
-import { searchAssignableDevelopers } from "./queries.server";
+import { isActivityCursor, type ActivityPage } from "./activity";
+import { listProjectActivity, searchAssignableDevelopers } from "./queries.server";
 import type { DeveloperOption, ProjectFieldErrors } from "./types";
 import { validateCreateProject, validateUpdateProject } from "./validation";
 
@@ -133,4 +134,21 @@ export async function removeProjectMemberAction(projectId: string, profileId: st
   }
   revalidateTeam(projectId);
   return { error: null, fieldErrors: {}, success: "Developer removed from the team." };
+}
+
+// ---------------------------------------------------------------------------
+// Activity (Phase 8C)
+// ---------------------------------------------------------------------------
+
+export type ActivityLoadResult = { page: ActivityPage | null; error: string | null };
+
+/** "Load more" for the activity feed. The cursor is untrusted input and validated here and in the database. */
+export async function loadMoreActivityAction(projectId: string, cursor: unknown): Promise<ActivityLoadResult> {
+  if (!isActivityCursor(cursor)) return { page: null, error: "The activity list could not be continued. Reload the page." };
+  try {
+    return { page: await listProjectActivity(projectId, cursor), error: null };
+  } catch (error) {
+    if (!(error instanceof ProjectError)) throw error;
+    return { page: null, error: error.message };
+  }
 }
