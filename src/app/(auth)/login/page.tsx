@@ -12,6 +12,7 @@ import { getThemePreference } from "@/lib/theme/server";
 export const metadata: Metadata = { title: "Sign in | CYCLO" };
 
 const messages: Record<string, string> = {
+  invitation_invalid: "This invitation link is invalid, expired or already used. Ask your administrator for help.",
   denied: "Your account does not have active CYCLO access. Contact your administrator.",
   unavailable: "Unable to verify access right now. Please try again.",
   logout_failed: "Sign-out could not be completed. Please try again.",

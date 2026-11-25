@@ -25,6 +25,9 @@ const env = {
   ...process.env,
   NEXT_PUBLIC_SUPABASE_URL: url,
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey,
+  // The invitation Admin client imports server-only. This key is never public.
+  SUPABASE_SECRET_KEY: process.env.SECRET_KEY ?? process.env.SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY,
+  CYCLO_APP_URL: `http://127.0.0.1:${port}`,
   // Never forward local admin secrets to the app process.
   SECRET_KEY: "",
   SERVICE_ROLE_KEY: "",

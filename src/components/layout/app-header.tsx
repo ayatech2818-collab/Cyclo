@@ -4,7 +4,8 @@ import { LogOut, Orbit } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import type { ActiveProfile } from "@/features/auth/access";
 import { logout } from "@/features/auth/actions";
-import { initials } from "@/features/employees/format";
+import { EmployeeAvatar } from "@/features/employees/components/employee-avatar";
+import type { ResolvedAvatar } from "@/features/profile/avatar";
 import { ROLE_LABELS } from "@/features/employees/types";
 import { canViewDirectory } from "@/features/employees/validation";
 import type { ThemePreference } from "@/lib/theme/theme";
@@ -18,7 +19,7 @@ const iconButton =
  * Navigation is a convenience only: every page and RPC behind these links
  * enforces its own role check.
  */
-export function AppHeader({ profile, theme }: { profile: ActiveProfile; theme: ThemePreference }) {
+export function AppHeader({ profile, theme, avatar = null }: { profile: ActiveProfile; theme: ThemePreference; avatar?: ResolvedAvatar | null }) {
   const name = profile.full_name?.trim() || profile.email || "Employee";
 
   return (
@@ -38,15 +39,17 @@ export function AppHeader({ profile, theme }: { profile: ActiveProfile; theme: T
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
           <ThemeToggle initial={theme} variant="compact" />
-          <div className="ml-1 hidden items-center gap-2.5 border-l border-border pl-3 md:flex">
-            <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-              {initials(profile.full_name, profile.email)}
-            </span>
-            <div className="text-right leading-tight">
+          <Link
+            href="/profile"
+            aria-label="Your profile"
+            className="ml-1 flex items-center gap-2.5 rounded-md border-border pl-1 hover:bg-surface-muted md:border-l md:pl-3"
+          >
+            <EmployeeAvatar fullName={profile.full_name} email={profile.email} avatarUrl={null} avatar={avatar} size="sm" />
+            <div className="hidden text-right leading-tight md:block">
               <p className="max-w-48 truncate text-sm font-medium">{name}</p>
               <p className="text-xs text-text-secondary">{ROLE_LABELS[profile.role]}</p>
             </div>
-          </div>
+          </Link>
           <form action={logout}>
             <button type="submit" className={iconButton} aria-label="Log out" title="Log out">
               <LogOut aria-hidden="true" className="size-4" />

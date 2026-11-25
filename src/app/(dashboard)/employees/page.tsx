@@ -12,6 +12,7 @@ import { EMPLOYEE_ERROR_MESSAGES } from "@/features/employees/errors";
 import { loadForPage } from "@/features/employees/page-errors.server";
 import { listEmployees } from "@/features/employees/queries.server";
 import { canViewDirectory, directoryHref, hasActiveFilters, parseDirectoryQuery } from "@/features/employees/validation";
+import { loadAvatars } from "@/features/profile/avatars.server";
 
 // Role-aware title: unauthorized roles get the same title as any missing page.
 export async function generateMetadata(): Promise<Metadata> {
@@ -42,9 +43,10 @@ export default async function EmployeesPage({ searchParams }: {
       />
     );
   } else if (result.data.items.length > 0) {
+    const avatars = Object.fromEntries(await loadAvatars(result.data.items.map((employee) => employee.id)));
     body = (
       <div className="space-y-4">
-        <EmployeeTable employees={result.data.items} currentUserId={profile.id} />
+        <EmployeeTable employees={result.data.items} currentUserId={profile.id} avatars={avatars} />
         <Pagination query={query} pageCount={result.data.pageCount} total={result.data.total} />
       </div>
     );
@@ -80,6 +82,7 @@ export default async function EmployeesPage({ searchParams }: {
             : "Search the employee directory."}
         </p>
       </div>
+      {profile.role === "SUPER_ADMIN" && <Link href="/employees/invitations" className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover">Invite Employee · Manage invitations</Link>}
       <EmployeeFilters query={query} />
       {body}
     </main>

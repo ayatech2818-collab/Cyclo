@@ -11,6 +11,7 @@ import { loadForPage } from "@/features/employees/page-errors.server";
 import { adminGetEmployee, getEmployee } from "@/features/employees/queries.server";
 import { canViewDirectory, isUuid } from "@/features/employees/validation";
 import { EmployeeManagement } from "@/features/employees/components/employee-management";
+import { loadAvatars } from "@/features/profile/avatars.server";
 
 // Employee names are never placed in tab titles or browser history. Unauthorized
 // roles get the same title as any missing page.
@@ -57,11 +58,12 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
 
   const employee = result.data.admin ?? result.data.directory;
   if (!employee) notFound();
+  const avatar = (await loadAvatars([employee.id])).get(employee.id) ?? null;
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 sm:px-6">
       {back}
-      <EmployeeHeader employee={employee} isSelf={employee.id === profile.id} />
+      <EmployeeHeader employee={employee} isSelf={employee.id === profile.id} avatar={avatar} />
       <div className="grid gap-6 lg:grid-cols-2">
         <EmployeeDirectoryFields employee={employee} />
         {result.data.admin && <EmployeeAdminFields employee={result.data.admin} />}

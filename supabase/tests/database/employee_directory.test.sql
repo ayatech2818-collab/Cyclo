@@ -6,7 +6,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(53);
+select plan(55);
 
 -- -----------------------------------------------------------------------------
 -- Fixtures (created as postgres; the auth trigger creates DEVELOPER profiles)
@@ -30,6 +30,8 @@ select '00000000-0000-0000-0000-000000000000', u.id, 'authenticated', 'authentic
        -- Metadata must never influence roles.
        '{"role":"SUPER_ADMIN"}'::jsonb, now(), now()
   from t_users as u;
+-- Phase 7 H1: uninvited accounts are created inactive; fixtures are activated explicitly.
+update public.profiles set is_active = true where id in (select id from t_users);
 
 update public.profiles set full_name = 'Alice Admin',      role = 'SUPER_ADMIN',     employee_code = 'PGT-001', is_git_organizer = true where id = '00000000-0000-4000-a000-000000000001';
 update public.profiles set full_name = 'Bob Backup',       role = 'SUPER_ADMIN',     employee_code = 'PGT-002' where id = '00000000-0000-4000-a000-000000000002';
@@ -103,7 +105,8 @@ select ok(not has_column_privilege('authenticated', 'public.profiles', 'onboarde
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'is_git_organizer', 'select'), 'is_git_organizer is not directly readable');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'created_at', 'select'),       'created_at is not directly readable');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'updated_at', 'select'),       'updated_at is not directly readable');
-select ok(has_column_privilege('authenticated', 'public.profiles', 'full_name', 'update'),            'own full_name UPDATE grant preserved');
+-- Revoked in 20261124120000: self-edits go only through the audited RPCs.
+select ok(not has_column_privilege('authenticated', 'public.profiles', 'full_name', 'update'),        'direct full_name UPDATE revoked (audited RPC only)');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'role', 'update'),             'role UPDATE still not granted');
 
 -- -----------------------------------------------------------------------------
@@ -175,8 +178,9 @@ select is(
   array['00000000-0000-4000-a000-000000000004'],
   'existing auth projection still works on own row');
 
-update public.profiles set full_name = 'Dan Updated' where id = '00000000-0000-4000-a000-000000000004';
-select is((select full_name from public.get_my_profile()), 'Dan Updated', 'own full_name update still works');
+select throws_ok($$ update public.profiles set full_name = 'Dan Direct' where id = '00000000-0000-4000-a000-000000000004' $$, '42501', null, 'direct own-row update denied');
+select lives_ok($$ select public.update_my_profile('Dan Updated') $$, 'own name changes through the audited RPC');
+select is((select full_name from public.get_my_profile()), 'Dan Updated', 'own full_name update still works via RPC');
 
 -- -----------------------------------------------------------------------------
 -- Inactive and anonymous callers
