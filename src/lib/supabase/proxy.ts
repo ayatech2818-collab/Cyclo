@@ -49,9 +49,12 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   if (pathname === "/") return response;
-  // Callback verifies its one-time token. Onboarding pages/actions independently
+  // Callbacks verify their one-time tokens. Onboarding pages/actions independently
   // verify Auth identity plus the caller's own invitation, including expiry.
-  if (["/auth/confirm", "/onboarding", "/onboarding/complete"].includes(pathname)) {
+  // /reset-password independently requires a fresh, signed email-link session and
+  // only changes the caller's own Auth password; it grants no CYCLO access.
+  // /forgot-password is public: it only asks Auth to email a recovery link.
+  if (["/auth/confirm", "/auth/recovery", "/onboarding", "/onboarding/complete", "/forgot-password", "/reset-password"].includes(pathname)) {
     response.headers.set("Cache-Control", "private, no-store");
     response.headers.set("Referrer-Policy", "no-referrer");
     return response;

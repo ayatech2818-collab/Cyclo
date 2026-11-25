@@ -28,8 +28,8 @@ Latest full run (2026-11-24, same code as commit `7fd9860`): lint and typecheck 
 | # | Blocker | Type | Needs |
 | --- | --- | --- | --- |
 | B1 | ~~Invitation sending hard-wired to local Supabase~~ — **resolved locally 2026-11-25** (not yet committed). `admin.server.ts` now accepts a local pairing or a hosted pairing (`https://<ref>.supabase.co` + explicit `https` `CYCLO_APP_URL`); see section 4.4. | Done | Commit and merge (you). |
-| B2 | **9 migrations missing on hosted** (finding M3). Until applied, the Employees page fails with `PGRST202` and later features have no schema. | Hosted change | Approval + database password (entered by you). |
-| B3 | **Hosted Auth not configured**: Site URL, redirect allow-list, Invite and Magic Link templates, custom SMTP. Without custom SMTP, Supabase's built-in mailer only delivers to project team members and is heavily rate-limited. | Dashboard config | Approval + Gmail App Password (entered by you in the Dashboard). |
+| B2 | ~~9 migrations missing on hosted~~ — **done 2026-11-25**: history repaired for migrations 1–2, migrations 3–11 applied with `db push`, post-checks passed (section 3.6). | Done | — |
+| B3 | Hosted Auth: **partly done 2026-11-25** — public sign-ups off, link expiry 3600 s, Gmail custom SMTP (smtp.gmail.com:465, sender CYCLO) and the Invite / Magic Link templates configured and verified read-only. Remaining: Site URL and the exact `<domain>/auth/confirm` redirect URL after Vercel, then a real invitation test (verifies delivery and template bodies). | Partly done | Vercel domain |
 | B4 | **Hosting target and domain not decided.** | Decision | Your choice of platform and production domain. |
 | B5 | **Server secret not provisioned**: a hosted secret key (`sb_secret_…`) must be created and placed in the hosting environment. | Dashboard + hosting config | You create and paste it; never in chat or Git. |
 
@@ -142,6 +142,7 @@ Migrations are forward-only; each file ends with a commented manual rollback. Th
 | Email → Confirm email | On (default) |
 | Email Templates → Invite user | Subject "You are invited to CYCLO", body from `supabase/templates/invite.html` |
 | Email Templates → Magic Link | Subject "Continue your CYCLO onboarding", body from `supabase/templates/onboarding-resume.html` |
+| Email Templates → Reset Password | Subject "Reset your CYCLO password", body from `supabase/templates/password-recovery.html` (links to `{{ .SiteURL }}/auth/recovery`; uses the Site URL, so it follows the environment) |
 | Email OTP / invite expiry | 3600 seconds (matches the one-hour invitation) |
 | Password: minimum length | 12 (recommended, M4) |
 | Password: leaked password protection | On (recommended, M4) |
@@ -205,3 +206,35 @@ Rejected: any other Supabase host (look-alikes, other domains, subdomains), `htt
 | No self-service password reset (L6) | Forgotten passwords need an administrator | Known limitation; reset via Supabase Dashboard |
 | Open low findings L1–L5, M1 follow-ups (HSTS, script CSP) | Minor hardening gaps, no data exposure | Accepted for go-live per scope decision |
 | `.claude/launch.json` and local scripts in the repository | None in production (dev only) | — |
+
+---
+
+## 3.6 Hosted migration record (2026-11-25)
+
+Executed with explicit approval, against project `Cyclo` (`jbcvznfxycngysxwtbsz`, PostgreSQL 17.12), from commit `6159e1b`.
+
+1. **Preflight (read-only):** one profile (active Super Admin), one Auth user; all 7 functions from migrations 1–2 hash-identical to the repository, plus their triggers, policies, constraints, indexes, grants and the Super Admin counter (1, consistent). No `supabase_migrations` schema, no `cyclo_employee_api`, no buckets. Only extra object: Supabase's `public.rls_auto_enable`.
+2. **Backup:** Pro plan; recent daily backups confirmed by the owner in the Dashboard.
+3. **History:** `migration repair --status applied 20261119120000 20261120095347 --remote`.
+4. **Dry run:** exactly migrations 3–11; no seeds, no roles.
+5. **Push:** `db push --remote --yes` applied all nine without errors.
+6. **Post-checks:** 11 versions in history; `cyclo_employee_api` NOLOGIN/no BYPASSRLS/no INHERIT, only `postgres` membership without SET/INHERIT; `avatars` bucket private, 2 MiB, JPEG/PNG/WebP; 3 Storage policies; Super Admin unchanged (SUPER_ADMIN, active, `requires_onboarding = false`, `avatar_kind = default`), counter 1; no SECURITY DEFINER function without a pinned search path; RLS on every public/private table; `authenticated` has column SELECT only and no UPDATE on `profiles`; H1 trigger in place; 0 audit rows, 0 invitations.
+7. **Security advisors:** nothing from the new migrations. Pre-existing: `public.rls_auto_enable` executable by anon/authenticated (Supabase-created event-trigger helper), leaked-password protection off (M4, Auth setting), INFO "RLS enabled, no policy" on `private.super_admin_guard` (intentional: no API access).
+
+Not changed: Auth settings, SMTP, the existing Super Admin's data, application hosting.
+
+## 3.7 Password recovery (2026-11-25, local code; hosted template pending)
+
+Recovery emails now link to `<Site URL>/auth/recovery?token_hash=…&type=recovery` (PKCE `?code=` also accepted). The callback verifies the link and opens `/reset-password`, which requires a signed email-link session from the last 15 minutes, sets the new password (12+ characters, max 72 bytes), signs the account out everywhere and returns to `/login?notice=password_updated`. **Hosted action needed:** paste `supabase/templates/password-recovery.html` into Authentication → Emails → Templates → Reset Password with subject "Reset your CYCLO password". No redirect-URL entry is needed for this link. Until the production Site URL is set, hosted recovery links point to `http://localhost:3000/auth/recovery`, which works with the app running locally against hosted (`npm run dev`).
+
+## 3.8 Forgot password (2026-11-25, local code)
+
+User flow: login → **Forgot password?** → `/forgot-password` (work email; always answers "If an account exists for this email, you will receive a password reset link."; constant minimum response time; Auth errors logged by code only) → `resetPasswordForEmail(email, { redirectTo: <CYCLO_APP_URL>/auth/recovery })` through the existing Gmail SMTP → email from the Reset Password template → `/auth/recovery` (token hash or PKCE code) → `/reset-password` (requires a signed email-link session from the last 15 minutes; 12+ characters, ≤ 72 bytes, matching, strength meter) → global sign-out → `/login?notice=password_updated`.
+
+The redirect origin comes from the same validated configuration as invitations (`CYCLO_APP_URL`, never request headers). If the pairing is not valid (for example a local dev server against the hosted project), no `redirectTo` is sent and Supabase uses the Site URL, which the template links to anyway.
+
+Hosted Dashboard steps (manual, after the Vercel deployment at `https://cyclo-alpha.vercel.app`):
+1. Authentication → Emails → Templates → **Reset Password**: subject `Reset your CYCLO password`, body = `supabase/templates/password-recovery.html`.
+2. Authentication → URL Configuration → **Site URL** = `https://cyclo-alpha.vercel.app`.
+3. Authentication → URL Configuration → **Redirect URLs**: add `https://cyclo-alpha.vercel.app/auth/confirm` and `https://cyclo-alpha.vercel.app/auth/recovery` (exact).
+4. Vercel environment: `CYCLO_APP_URL=https://cyclo-alpha.vercel.app` (server-only), plus the other variables in section 4.1.

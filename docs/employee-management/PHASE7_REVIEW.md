@@ -96,7 +96,7 @@ The `auth.users` insert trigger provisions any Auth user that has no matching in
 - **L3** — After deactivation or a role change, avatar signed URLs already issued stay valid for up to 1 hour, and the user's JWT until expiry; all RPCs, pages and Storage policies re-check `is_active`, so no further data is served.
 - **L4** — Uploaded photos keep embedded metadata (EXIF, possibly GPS). Stripping requires server-side re-encoding.
 - **L5** — Photos of deactivated employees remain in Storage (visible to SA/PM only).
-- **L6** — No self-service password reset; a user who forgets their password needs an administrator (Supabase Dashboard) or a new flow.
+- **L6** — No self-service password reset; a user who forgets their password needs an administrator (Supabase Dashboard) or a new flow. **Resolved 2026-11-25:** password recovery via `/auth/recovery` and `/reset-password` (see DEPLOYMENT.md 3.7).
 
 ### Info
 - **I1** — Three Phase 4 functions on the local database differ from the migration file only by one trailing space (the file was trimmed after it was applied). No functional difference; hosted will receive the file version.

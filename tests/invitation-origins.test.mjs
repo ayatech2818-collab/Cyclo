@@ -13,7 +13,7 @@ const rejects = (supabase, app, why) => assert.throws(() => resolveInvitationTar
 
 test("local development keeps working as before", () => {
   assert.deepEqual(plain(resolveInvitationTargets("http://127.0.0.1:54321", undefined)), {
-    mode: "local", supabaseOrigin: "http://127.0.0.1:54321", callbackUrl: "http://127.0.0.1:3000/auth/confirm",
+    mode: "local", supabaseOrigin: "http://127.0.0.1:54321", appOrigin: "http://127.0.0.1:3000", callbackUrl: "http://127.0.0.1:3000/auth/confirm",
   }, "CYCLO_APP_URL still defaults locally");
   for (const [app, callback] of [
     ["http://127.0.0.1:3105", "http://127.0.0.1:3105/auth/confirm"],
@@ -27,7 +27,7 @@ test("local development keeps working as before", () => {
 
 test("production accepts only a hosted Supabase project and an explicit https origin", () => {
   assert.deepEqual(plain(resolveInvitationTargets(HOSTED, APP)), {
-    mode: "production", supabaseOrigin: HOSTED, callbackUrl: `${APP}/auth/confirm`,
+    mode: "production", supabaseOrigin: HOSTED, appOrigin: APP, callbackUrl: `${APP}/auth/confirm`,
   });
   assert.equal(resolveInvitationTargets(`${HOSTED}/`, `${APP}/`).callbackUrl, `${APP}/auth/confirm`, "trailing slash is normalised");
   assert.equal(resolveInvitationTargets(HOSTED, "https://cyclo.example.com:443").callbackUrl, "https://cyclo.example.com/auth/confirm", "explicit default port is the default port");

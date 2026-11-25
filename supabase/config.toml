@@ -266,6 +266,10 @@ content_path = "./supabase/templates/invite.html"
 subject = "Continue your CYCLO onboarding"
 content_path = "./supabase/templates/onboarding-resume.html"
 
+[auth.email.template.recovery]
+subject = "Reset your CYCLO password"
+content_path = "./supabase/templates/password-recovery.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true
