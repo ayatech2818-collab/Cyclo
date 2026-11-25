@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowRight, CircleAlert, Eye, EyeOff, LoaderCircle, Lock, Mail } from "lucide-react";
 import { useActionState, useState, type KeyboardEvent } from "react";
 
@@ -42,7 +43,12 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
       </div>
 
       <div>
-        <label htmlFor="password" className="mb-1.5 block text-sm font-medium">Password</label>
+        <div className="mb-1.5 flex items-center justify-between gap-3">
+          <label htmlFor="password" className="block text-sm font-medium">Password</label>
+          <Link href="/forgot-password" className="text-sm font-medium text-primary underline-offset-4 hover:text-primary-hover hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <div className="relative">
           <Lock aria-hidden="true" className={fieldIcon} />
           <input

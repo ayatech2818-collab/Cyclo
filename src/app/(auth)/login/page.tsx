@@ -16,6 +16,11 @@ const messages: Record<string, string> = {
   denied: "Your account does not have active CYCLO access. Contact your administrator.",
   unavailable: "Unable to verify access right now. Please try again.",
   logout_failed: "Sign-out could not be completed. Please try again.",
+  recovery_invalid: "This password-reset link is invalid, expired or already used. Use “Forgot password?” to request a new one.",
+};
+
+const notices: Record<string, string> = {
+  password_updated: "Your password has been updated. Sign in with your new password.",
 };
 
 const stages = [
@@ -43,10 +48,11 @@ function Logo({ inverted = false }: { inverted?: boolean }) {
 }
 
 export default async function LoginPage({ searchParams }: {
-  searchParams: Promise<{ error?: string | string[] }>;
+  searchParams: Promise<{ error?: string | string[]; notice?: string | string[] }>;
 }) {
   const supabase = await createClient();
-  const [access, { error }, theme] = await Promise.all([getAccess(supabase), searchParams, getThemePreference()]);
+  const [access, { error, notice: noticeKey }, theme] = await Promise.all([getAccess(supabase), searchParams, getThemePreference()]);
+  const notice = typeof noticeKey === "string" && Object.hasOwn(notices, noticeKey) ? notices[noticeKey] : null;
   const logoutFailed = error === "logout_failed";
   if (access.status === "authorized" && !logoutFailed) redirect("/dashboard");
 
@@ -107,6 +113,10 @@ export default async function LoginPage({ searchParams }: {
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12">
           <h1 id="login-title" className="text-3xl font-semibold tracking-tight">Welcome back</h1>
           <p className="mt-2 text-sm text-text-secondary">Sign in to your CYCLO workspace to continue.</p>
+
+          {notice && (
+            <p role="status" className="mt-6 rounded-lg border border-success/25 bg-success/10 px-3.5 py-3 text-sm text-success">{notice}</p>
+          )}
 
           <div className="mt-8">
             <LoginForm initialError={initialError} />

@@ -23,6 +23,8 @@ export type InvitationTargets = {
   mode: "local" | "production";
   /** Origin the Admin client connects to. */
   supabaseOrigin: string;
+  /** Validated application origin (no trailing slash). */
+  appOrigin: string;
   /** Exact Auth redirect target written into invitation emails. */
   callbackUrl: string;
 };
@@ -77,7 +79,7 @@ export function resolveInvitationTargets(supabaseUrl: string | undefined, appUrl
     if (!isLoopback(app)) {
       throw new InvitationConfigError("A local Supabase project may only send invitation links to a local application origin.");
     }
-    return { mode: "local", supabaseOrigin: supabase.origin, callbackUrl: `${app.origin}/auth/confirm` };
+    return { mode: "local", supabaseOrigin: supabase.origin, appOrigin: app.origin, callbackUrl: `${app.origin}/auth/confirm` };
   }
 
   assertProductionOrigin(supabase, "NEXT_PUBLIC_SUPABASE_URL");
@@ -94,7 +96,7 @@ export function resolveInvitationTargets(supabaseUrl: string | undefined, appUrl
   if (!DNS_NAME.test(app.hostname)) {
     throw new InvitationConfigError("CYCLO_APP_URL must use a public DNS host name in production.");
   }
-  return { mode: "production", supabaseOrigin: supabase.origin, callbackUrl: `${app.origin}/auth/confirm` };
+  return { mode: "production", supabaseOrigin: supabase.origin, appOrigin: app.origin, callbackUrl: `${app.origin}/auth/confirm` };
 }
 
 /** Accepts the modern secret key, or a legacy service-role JWT for the local stack only. */

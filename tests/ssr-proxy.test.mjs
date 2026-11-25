@@ -75,13 +75,13 @@ test("future application and API paths are denied for unapproved profiles", asyn
 });
 
 test("only exact callback and onboarding paths bypass the active-profile proxy gate", async () => {
-  for (const path of ["/auth/confirm", "/onboarding", "/onboarding/complete"]) {
+  for (const path of ["/auth/confirm", "/auth/recovery", "/onboarding", "/onboarding/complete", "/forgot-password", "/reset-password"]) {
     const response = await proxyFor("denied")(new NextRequest(`http://localhost${path}`));
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("cache-control"), "private, no-store");
     assert.equal(response.headers.get("referrer-policy"), "no-referrer");
   }
-  for (const path of ["/auth/other", "/onboarding/admin", "/onboarding/complete/extra"]) {
+  for (const path of ["/auth/other", "/auth/recovery/extra", "/onboarding/admin", "/onboarding/complete/extra", "/reset-password/extra", "/reset-passwords", "/forgot-password/extra"]) {
     const response = await proxyFor("denied")(new NextRequest(`http://localhost${path}`));
     assert.equal(response.status, 303);
   }
