@@ -6,8 +6,9 @@ import { redirect } from "next/navigation";
 import { requireActiveProfile } from "@/features/auth/server";
 
 import { PROJECT_ERROR_FIELDS, ProjectError } from "./errors";
-import { assignProjectManager, createProject, setProjectArchived, updateProject } from "./mutations.server";
-import type { ProjectFieldErrors } from "./types";
+import { addProjectMember, assignProjectManager, createProject, removeProjectMember, setProjectArchived, updateProject } from "./mutations.server";
+import { searchAssignableDevelopers } from "./queries.server";
+import type { DeveloperOption, ProjectFieldErrors } from "./types";
 import { validateCreateProject, validateUpdateProject } from "./validation";
 
 export type ProjectFormState = { error: string | null; fieldErrors: ProjectFieldErrors; success: string | null };
@@ -89,4 +90,47 @@ export async function setProjectArchivedAction(id: string, archived: boolean): P
   revalidatePath("/projects");
   revalidatePath(`/projects/${id}`);
   return { error: null, fieldErrors: {}, success: archived ? "Project archived." : "Project restored." };
+}
+
+// ---------------------------------------------------------------------------
+// Team (Phase 8B)
+// ---------------------------------------------------------------------------
+
+function revalidateTeam(id: string) {
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${id}`);
+  revalidatePath(`/projects/${id}/team`);
+}
+
+export type DeveloperSearchResult = { options: DeveloperOption[]; error: string | null };
+
+/** Searchable selector backend. Returns only active developers not yet on the team. */
+export async function searchDevelopersAction(projectId: string, search: string): Promise<DeveloperSearchResult> {
+  try {
+    return { options: await searchAssignableDevelopers(projectId, search), error: null };
+  } catch (error) {
+    if (!(error instanceof ProjectError)) throw error;
+    return { options: [], error: error.message };
+  }
+}
+
+export async function addProjectMemberAction(projectId: string, profileId: string): Promise<ProjectFormState> {
+  try {
+    await addProjectMember(projectId, profileId);
+  } catch (error) {
+    return toFormState(error);
+  }
+  revalidateTeam(projectId);
+  return { error: null, fieldErrors: {}, success: "Developer added to the team." };
+}
+
+// Bound with (projectId, profileId); useActionState's arguments are not needed.
+export async function removeProjectMemberAction(projectId: string, profileId: string): Promise<ProjectFormState> {
+  try {
+    await removeProjectMember(projectId, profileId);
+  } catch (error) {
+    return toFormState(error);
+  }
+  revalidateTeam(projectId);
+  return { error: null, fieldErrors: {}, success: "Developer removed from the team." };
 }

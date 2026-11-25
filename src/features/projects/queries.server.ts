@@ -3,14 +3,14 @@ import "server-only";
 import { requireActiveProfile } from "@/features/auth/server";
 import { createClient } from "@/lib/supabase/server";
 
-import { projectTotalCount, toProjectDetail, toProjectListItem, toProjectManagerOption } from "./dto";
+import { projectTotalCount, toDeveloperOption, toProjectDetail, toProjectListItem, toProjectManagerOption, toProjectMember } from "./dto";
 import { ProjectError, describeProjectFailure, mapProjectDatabaseError } from "./errors";
-import type { ProjectDetail, ProjectListPage, ProjectListQuery, ProjectManagerOption } from "./types";
-import { isUuid } from "./validation";
+import type { DeveloperOption, ProjectDetail, ProjectListPage, ProjectListQuery, ProjectManagerOption, ProjectMember } from "./types";
+import { canCreateProjects, isUuid, normalizeSearch } from "./validation";
 
 /*
  * Server-only project reads. Visibility is decided by the database RPCs
- * (Super Admin: all, PM: assigned, Developer: none until membership exists);
+ * (Super Admin: all, PM: assigned, Developer: projects they are members of);
  * the application only re-checks the session and parses rows into DTOs.
  */
 
@@ -79,4 +79,31 @@ export async function listProjectManagerOptions(): Promise<ProjectManagerOption[
   const { data, error } = await supabase.rpc("list_project_manager_options");
   if (error) failProject("list_project_manager_options", error);
   return ((data ?? []) as unknown[]).map(toProjectManagerOption);
+}
+
+/** Developer members of a project. Throws not_found when the caller cannot see the team. */
+export async function listProjectMembers(projectId: string): Promise<ProjectMember[]> {
+  await requireActiveProfile();
+  if (!isUuid(projectId)) throw new ProjectError("not_found");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("list_project_members", { p_project_id: projectId });
+  if (error) failProject("list_project_members", error);
+  return ((data ?? []) as unknown[]).map(toProjectMember);
+}
+
+export const DEVELOPER_SEARCH_LIMIT = 20;
+
+/** Active developers not yet on the team (Super Admin or the assigned PM). */
+export async function searchAssignableDevelopers(projectId: string, search: unknown): Promise<DeveloperOption[]> {
+  const { profile } = await requireActiveProfile();
+  if (!canCreateProjects(profile.role)) throw new ProjectError("forbidden");
+  if (!isUuid(projectId)) throw new ProjectError("not_found");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("list_assignable_developers", {
+    p_project_id: projectId,
+    p_search: normalizeSearch(search) || undefined,
+    p_limit: DEVELOPER_SEARCH_LIMIT,
+  });
+  if (error) failProject("list_assignable_developers", error);
+  return ((data ?? []) as unknown[]).map(toDeveloperOption);
 }

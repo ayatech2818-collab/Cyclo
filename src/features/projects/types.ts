@@ -87,6 +87,23 @@ export type ProjectDetail = ProjectListItem & {
 
 export type ProjectManagerOption = { id: string; fullName: string | null; email: string | null };
 
+/** A developer on a project's team (Phase 8B). */
+export type ProjectMember = {
+  membershipId: string;
+  profileId: string;
+  fullName: string | null;
+  email: string | null;
+  role: AppRole;
+  /** False when the employee was deactivated after being added. */
+  isActive: boolean;
+  addedBy: string;
+  addedByName: string | null;
+  addedAt: string;
+};
+
+/** Candidate for the "Add developer" selector: an active developer not yet on the team. */
+export type DeveloperOption = { id: string; fullName: string | null; email: string | null };
+
 /** Editable fields after client/server validation. Dates are YYYY-MM-DD or null. */
 export type ProjectFieldValues = {
   name: string;

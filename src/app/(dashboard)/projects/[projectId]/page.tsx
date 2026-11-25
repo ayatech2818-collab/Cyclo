@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, Archive, ArrowLeft, Pencil, UserRound } from "lucide-react";
 
 import { requireActiveProfile } from "@/features/auth/server";
-import { StatePanel, secondaryButton as panelButton } from "@/features/employees/components/state-panel";
-import { ArchivedBadge, ProjectKeyBadge, ProjectPriorityBadge, ProjectStatusBadge } from "@/features/projects/components/project-badges";
+import { ProjectHeader, ProjectLoadError, ProjectManagerIdentity } from "@/features/projects/components/project-header";
 import { ArchiveControl, AssignManagerForm } from "@/features/projects/components/project-manage";
-import { ProjectSectionNav } from "@/features/projects/components/project-section-nav";
-import { card, secondaryButton } from "@/features/projects/components/styles";
-import { PROJECT_ERROR_MESSAGES } from "@/features/projects/errors";
-import { formatProjectDate, managerLabel } from "@/features/projects/format";
+import { card } from "@/features/projects/components/styles";
+import { formatProjectDate } from "@/features/projects/format";
 import { loadProjectForPage } from "@/features/projects/page-errors.server";
 import { getProject, listProjectManagerOptions } from "@/features/projects/queries.server";
 import { canAssignProjectManager, canManageProject, isUuid } from "@/features/projects/validation";
@@ -33,28 +28,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const { projectId } = await params;
   if (!isUuid(projectId)) notFound();
 
-  const back = (
-    <Link href="/projects" className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary">
-      <ArrowLeft aria-hidden="true" className="size-4" />
-      Projects
-    </Link>
-  );
-
   const result = await loadProjectForPage(() => getProject(projectId));
-  if (result.error) {
-    return (
-      <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-        {back}
-        <StatePanel
-          tone="danger"
-          icon={AlertTriangle}
-          title="Couldn’t load this project"
-          description={PROJECT_ERROR_MESSAGES[result.error]}
-          action={<Link href={`/projects/${projectId}`} className={panelButton}>Try again</Link>}
-        />
-      </main>
-    );
-  }
+  if (result.error) return <ProjectLoadError code={result.error} retryHref={`/projects/${projectId}`} />;
 
   const project = result.data;
   if (!project) notFound();
@@ -67,39 +42,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-      {back}
-
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <ProjectKeyBadge projectKey={project.projectKey} />
-            {archived && <ArchivedBadge />}
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight break-words sm:text-3xl">{project.name}</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <ProjectStatusBadge status={project.status} />
-            <ProjectPriorityBadge priority={project.priority} />
-          </div>
-        </div>
-        {canManage && !archived && (
-          <Link href={`/projects/${project.id}/edit`} className={cn(secondaryButton, "shrink-0")}>
-            <Pencil aria-hidden="true" className="size-4" />
-            Edit project
-          </Link>
-        )}
-      </header>
-
-      {archived && (
-        <div role="status" className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted px-4 py-3 text-sm">
-          <Archive aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-text-secondary" />
-          <p>
-            Archived on <span className="font-medium">{formatProjectDate(project.archivedAt)}</span>. This project is read-only
-            {canManage ? "; restore it to make changes." : "."}
-          </p>
-        </div>
-      )}
-
-      <ProjectSectionNav projectId={project.id} current="overview" />
+      <ProjectHeader project={project} canManage={canManage} current="overview" />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
@@ -128,21 +71,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
         <aside className="space-y-6">
           <section className={cn(card, "p-5")} aria-labelledby="project-manager">
-            <h2 id="project-manager" className="text-sm font-semibold text-text-secondary">Project Manager</h2>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <UserRound aria-hidden="true" className="size-5" />
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{managerLabel(project.projectManagerName)}</p>
-                {project.projectManagerEmail && <p className="truncate text-xs text-text-secondary">{project.projectManagerEmail}</p>}
-              </div>
-            </div>
-            {!project.projectManagerIsActive && (
-              <p className="mt-3 rounded-md bg-warning/10 px-3 py-2 text-xs text-warning">
-                This Project Manager is no longer active.{canAssign ? " Assign an active Project Manager." : " A Super Admin must reassign the project."}
-              </p>
-            )}
+            <h2 id="project-manager" className="mb-3 text-sm font-semibold text-text-secondary">Project Manager</h2>
+            <ProjectManagerIdentity project={project} canAssign={canAssign} />
             {canAssign && (
               <div className="mt-4 border-t border-border pt-4">
                 {archived ? (

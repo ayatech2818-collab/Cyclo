@@ -7,41 +7,15 @@
 // projects, then removes them. Projects cannot be deleted through any API role,
 // so cleanup runs as the table owner through the local database container.
 import assert from "node:assert/strict";
-import { randomBytes, randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 
-import { createClient } from "@supabase/supabase-js";
-
 import { localSql } from "../helpers/local-postgres.mjs";
+import { admin, createFixtures, runId } from "../helpers/project-fixtures.mjs";
 
-const url = process.env.API_URL;
-const anonKey = process.env.PUBLISHABLE_KEY ?? process.env.ANON_KEY;
-const serviceKey = process.env.SECRET_KEY ?? process.env.SERVICE_ROLE_KEY;
-
-if (!url || !anonKey || !serviceKey) throw new Error("Load `supabase status -o env` output first.");
-if (!["127.0.0.1", "localhost", "[::1]"].includes(new URL(url).hostname)) {
-  throw new Error("Refusing to run against a non-local Supabase URL.");
-}
-
-const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-const run = randomUUID().slice(0, 4).toUpperCase().replace(/[^A-Z]/g, "X");
+const run = runId();
 const key = (suffix) => `I${run}${suffix}`.slice(0, 10);
-const users = {};
+const { users, makeUser, cleanup } = createFixtures(`proj-${run}`);
 const projects = {};
-
-async function makeUser(name, role) {
-  const email = `it-proj-${run.toLowerCase()}-${name}@cyclo.test`;
-  const password = randomBytes(24).toString("base64url");
-  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { role: "SUPER_ADMIN" } });
-  if (error) throw error;
-  const id = data.user.id;
-  const { error: updateError } = await admin.from("profiles").update({ role, is_active: true, full_name: `IT ${name}` }).eq("id", id);
-  if (updateError) throw updateError;
-  const client = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { error: signInError } = await client.auth.signInWithPassword({ email, password });
-  if (signInError) throw signInError;
-  users[name] = { id, client };
-}
 
 before(async () => {
   await makeUser("sa", "SUPER_ADMIN");
@@ -50,24 +24,7 @@ before(async () => {
   await makeUser("dev", "DEVELOPER");
 });
 
-after(async () => {
-  const ids = Object.values(users).map(({ id }) => id).filter((id) => /^[0-9a-f-]{36}$/.test(id));
-  if (ids.length) {
-    const list = ids.map((id) => `'${id}'`).join(",");
-    const result = localSql(`begin;
-      alter table public.projects disable trigger projects_prevent_delete;
-      delete from public.projects where project_manager_id in (${list}) or created_by in (${list});
-      alter table public.projects enable trigger projects_prevent_delete;
-      delete from private.project_audit_log where actor_id in (${list});
-      update public.profiles set role = 'DEVELOPER' where id in (${list});
-      commit;`);
-    if (result.code !== 0) console.error(result.stderr);
-  }
-  for (const { id, client } of Object.values(users)) {
-    await client.auth.signOut();
-    await admin.auth.admin.deleteUser(id);
-  }
-});
+after(cleanup);
 
 test("Super Admin creates a project for an active PM", async () => {
   const { data, error } = await users.sa.client.rpc("create_project", {

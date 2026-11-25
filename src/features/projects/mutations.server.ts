@@ -85,3 +85,26 @@ export async function setProjectArchived(id: string, archived: boolean): Promise
   const name = archived ? "archive_project" : "restore_project";
   return rpcId(name, () => supabase.rpc(name, { p_project_id: id }));
 }
+
+/** Adds an active developer to the team (Super Admin or the assigned PM). */
+export async function addProjectMember(projectId: string, profileId: string): Promise<string> {
+  const { profile } = await requireActiveProfile();
+  if (!canCreateProjects(profile.role)) throw new ProjectError("forbidden");
+  requireProjectId(projectId);
+  if (!isUuid(profileId)) throw new ProjectError("invalid_member");
+  const supabase = await createClient();
+  return rpcId("add_project_member", () =>
+    supabase.rpc("add_project_member", { p_project_id: projectId, p_profile_id: profileId }),
+  );
+}
+
+export async function removeProjectMember(projectId: string, profileId: string): Promise<string> {
+  const { profile } = await requireActiveProfile();
+  if (!canCreateProjects(profile.role)) throw new ProjectError("forbidden");
+  requireProjectId(projectId);
+  if (!isUuid(profileId)) throw new ProjectError("member_not_found");
+  const supabase = await createClient();
+  return rpcId("remove_project_member", () =>
+    supabase.rpc("remove_project_member", { p_project_id: projectId, p_profile_id: profileId }),
+  );
+}
