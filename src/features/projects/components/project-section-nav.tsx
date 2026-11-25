@@ -2,19 +2,21 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils/cn";
 
+export type ProjectSection = "overview" | "team";
+
 /**
- * Project sections. Only Overview exists in Phase 8A; the others are shown as
- * unavailable (not links) so no empty or fake pages are reachable.
+ * Project sections. Overview (8A) and Team (8B) exist; the others are shown
+ * as unavailable (not links) so no empty or fake pages are reachable.
  */
 const SECTIONS = [
-  { id: "overview", label: "Overview", available: true },
-  { id: "team", label: "Team", available: false },
-  { id: "work", label: "Work", available: false },
-  { id: "sprints", label: "Sprints", available: false },
-  { id: "activity", label: "Activity", available: false },
+  { id: "overview", label: "Overview", path: "" },
+  { id: "team", label: "Team", path: "/team" },
+  { id: "work", label: "Work", path: null },
+  { id: "sprints", label: "Sprints", path: null },
+  { id: "activity", label: "Activity", path: null },
 ] as const;
 
-export function ProjectSectionNav({ projectId, current }: { projectId: string; current: "overview" }) {
+export function ProjectSectionNav({ projectId, current }: { projectId: string; current: ProjectSection }) {
   return (
     <nav aria-label="Project sections" className="-mb-px overflow-x-auto border-b border-border">
       <ul className="flex min-w-max gap-1">
@@ -22,9 +24,9 @@ export function ProjectSectionNav({ projectId, current }: { projectId: string; c
           const active = section.id === current;
           return (
             <li key={section.id}>
-              {section.available ? (
+              {section.path !== null ? (
                 <Link
-                  href={`/projects/${projectId}`}
+                  href={`/projects/${projectId}${section.path}`}
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "inline-flex h-10 items-center border-b-2 px-3 text-sm font-medium",

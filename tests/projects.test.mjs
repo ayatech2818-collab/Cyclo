@@ -239,3 +239,46 @@ test("migration blocks hard deletes and keeps project keys immutable", () => {
   assert.match(migration, /project_key_immutable/);
   assert.doesNotMatch(migration, /grant[^;]*delete[^;]*on table public\.projects/i);
 });
+
+// ---------------------------------------------------------------------------
+// Phase 8B: team membership
+// ---------------------------------------------------------------------------
+
+test("membership errors map to specific, safe messages", () => {
+  assert.equal(mapProjectDatabaseError({ code: "23505", message: "duplicate_member" }), "duplicate_member");
+  assert.equal(mapProjectDatabaseError({ code: "23505", message: "duplicate_project_key" }), "duplicate_project_key");
+  assert.equal(mapProjectDatabaseError({ code: "22023", message: "invalid_member" }), "invalid_member");
+  assert.equal(mapProjectDatabaseError({ code: "23514", message: "invalid_member" }), "invalid_member");
+  assert.equal(mapProjectDatabaseError({ code: "P0002", message: "member_not_found" }), "member_not_found");
+  assert.equal(mapProjectDatabaseError({ code: "P0002", message: "project_not_found" }), "not_found");
+  assert.match(new ProjectError("invalid_member").message, /active developers/);
+});
+
+const memberRow = {
+  id: "00000000-0000-4000-a000-0000000000bb", profile_id: "00000000-0000-4000-a000-0000000000cc",
+  full_name: null, email: "dev@cyclo.test", role: "DEVELOPER", is_active: false,
+  added_by: PM, added_by_name: "Pat", created_at: "2026-11-26T10:00:00+00:00", password_hash: "leak",
+};
+
+test("member rows are parsed into DTOs without extra fields", () => {
+  const member = dto.toProjectMember(memberRow);
+  assert.equal(member.profileId, memberRow.profile_id);
+  assert.equal(member.isActive, false);
+  assert.equal(member.addedAt, memberRow.created_at);
+  assert.equal("password_hash" in member, false);
+  assert.throws(() => dto.toProjectMember({ ...memberRow, role: "ADMIN" }), ProjectError);
+  assert.throws(() => dto.toProjectMember({ ...memberRow, is_active: "yes" }), ProjectError);
+  assert.deepEqual(dto.toDeveloperOption({ id: PM, full_name: "Dev", email: null, role: "DEVELOPER" }), { id: PM, fullName: "Dev", email: null });
+});
+
+test("team UI calls only server actions (no Supabase client or secret key in the browser)", () => {
+  const source = readFileSync(new URL("../src/features/projects/components/project-team.tsx", import.meta.url), "utf8");
+  assert.match(source, /^"use client";/);
+  assert.doesNotMatch(source, /@supabase|createClient|SECRET_KEY|service_role/);
+});
+
+test("team migration keeps memberships write-protected and unique", () => {
+  const team = readFileSync(new URL("../supabase/migrations/20261126100000_project_team_members.sql", import.meta.url), "utf8");
+  assert.match(team, /unique \(project_id, profile_id\)/);
+  assert.doesNotMatch(team, /grant[^;]*(insert|delete|update)[^;]*on table public\.project_members to (authenticated|service_role)/i);
+});

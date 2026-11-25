@@ -1,6 +1,8 @@
 import { ProjectError } from "./errors";
-import type { ProjectDetail, ProjectListItem, ProjectManagerOption } from "./types";
+import type { DeveloperOption, ProjectDetail, ProjectListItem, ProjectManagerOption, ProjectMember } from "./types";
 import { isProjectPriority, isProjectStatus } from "./validation";
+// Relative import keeps this module loadable by the plain-Node unit tests.
+import { isAppRole } from "../employees/validation";
 
 /*
  * Runtime parsers for project RPC rows. Each parser copies only its DTO's
@@ -67,6 +69,27 @@ export function toProjectDetail(value: unknown): ProjectDetail {
 }
 
 export function toProjectManagerOption(value: unknown): ProjectManagerOption {
+  const row = asRow(value);
+  return { id: str(row, "id"), fullName: nullableStr(row, "full_name"), email: nullableStr(row, "email") };
+}
+
+export function toProjectMember(value: unknown): ProjectMember {
+  const row = asRow(value);
+  if (!isAppRole(row.role)) throw new ProjectError("unexpected");
+  return {
+    membershipId: str(row, "id"),
+    profileId: str(row, "profile_id"),
+    fullName: nullableStr(row, "full_name"),
+    email: nullableStr(row, "email"),
+    role: row.role,
+    isActive: bool(row, "is_active"),
+    addedBy: str(row, "added_by"),
+    addedByName: nullableStr(row, "added_by_name"),
+    addedAt: str(row, "created_at"),
+  };
+}
+
+export function toDeveloperOption(value: unknown): DeveloperOption {
   const row = asRow(value);
   return { id: str(row, "id"), fullName: nullableStr(row, "full_name"), email: nullableStr(row, "email") };
 }

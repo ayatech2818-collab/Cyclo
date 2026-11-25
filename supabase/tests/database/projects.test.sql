@@ -176,7 +176,7 @@ select throws_ok($q$select public.assign_project_manager((select id from t_proje
 -- -----------------------------------------------------------------------------
 reset role;
 select throws_ok($q$delete from public.projects where project_key = 'WEB'$q$, '23514', 'Projects cannot be deleted. Archive the project instead.', 'hard delete is blocked even for the owner');
-select throws_ok($q$truncate public.projects$q$, '23514', 'Projects cannot be deleted. Archive the project instead.', 'truncate is blocked');
+select throws_ok($q$truncate public.projects cascade$q$, '23514', 'Projects cannot be deleted. Archive the project instead.', 'truncate is blocked');
 select throws_ok($q$update public.projects set project_key = 'WEB2' where project_key = 'WEB'$q$, '22023', 'project_key_immutable', 'project keys are immutable');
 select throws_ok($q$update public.projects set project_manager_id = '80000000-0000-4000-a000-000000000004' where project_key = 'WEB'$q$, '23514', 'invalid_project_manager', 'trigger rejects a non-PM for every writer');
 select throws_ok($q$update public.projects set start_date = '2027-05-01' where project_key = 'WEB'$q$, '23514', null, 'date order is a table constraint');

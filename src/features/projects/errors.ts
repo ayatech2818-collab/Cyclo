@@ -18,6 +18,9 @@ export type ProjectErrorCode =
   | "invalid_project_manager"
   | "duplicate_project_key"
   | "project_archived"
+  | "invalid_member"
+  | "duplicate_member"
+  | "member_not_found"
   | "unavailable"
   | "unexpected";
 
@@ -35,6 +38,9 @@ export const PROJECT_ERROR_MESSAGES: Record<ProjectErrorCode, string> = {
   invalid_project_manager: "Choose an active Project Manager.",
   duplicate_project_key: "This project key is already in use. Choose another key.",
   project_archived: "Archived projects are read-only. Restore the project to make changes.",
+  invalid_member: "Only active developers can be added to a project team.",
+  duplicate_member: "This developer is already on the team.",
+  member_not_found: "This developer is no longer on the team.",
   unavailable: "Project data is temporarily unavailable. Please try again.",
   unexpected: "Something went wrong. Please try again.",
 };
@@ -87,15 +93,17 @@ export function mapProjectDatabaseError(error: DatabaseErrorLike | null | undefi
     case "42501":
       return message === "unauthenticated" ? "unauthenticated" : "forbidden";
     case "P0002":
-      return "not_found";
+      return message === "member_not_found" ? "member_not_found" : "not_found";
     case "23505":
-      return "duplicate_project_key";
+      return message === "duplicate_member" ? "duplicate_member" : "duplicate_project_key";
     case "55000":
       return message === "project_archived" ? "project_archived" : "unexpected";
     case "22023":
+      if (message === "invalid_member") return "invalid_member";
       return VALIDATION_MESSAGES.has(message as ProjectErrorCode) ? (message as ProjectErrorCode) : "invalid_input";
     case "23514":
       if (message === "invalid_project_manager") return "invalid_project_manager";
+      if (message === "invalid_member") return "invalid_member";
       return "invalid_input";
     case "22P02": // invalid enum/uuid/date text representation
     case "22007":

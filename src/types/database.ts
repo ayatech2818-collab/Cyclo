@@ -28,6 +28,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"project_members": {
+                  Row: {
+                    "added_by": string,"created_at": string,"id": string,"profile_id": string,"project_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "added_by": string,"created_at"?: string,"id"?: string,"profile_id": string,"project_id": string
+                  }
+                  Update: {
+                    "added_by"?: string,"created_at"?: string,"id"?: string,"profile_id"?: string,"project_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "project_members_added_by_fkey"
+      columns: ["added_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_members_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_members_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"projects": {
                   Row: {
                     "archived_at": string | null,"created_at": string,"created_by": string,"description": string | null,"id": string,"name": string,"priority": Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_id": string,"start_date": string | null,"status": Database["public"]['Enums']["project_status"],"target_date": string | null,"updated_at": string
@@ -64,6 +96,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
             }[]
+                           },
+"add_project_member":
+{ Args: { "p_profile_id": string,"p_project_id": string }; Returns: string
                            },
 "admin_create_employee_invitation":
 { Args: { "p_email": string,"p_full_name": string,"p_role": Database["public"]['Enums']["app_role"] }; Returns: {
@@ -159,6 +194,11 @@ isOneToOne: false
               "archived_at": string,"created_at": string,"created_by": string,"created_by_name": string,"description": string,"id": string,"name": string,"priority": Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_email": string,"project_manager_id": string,"project_manager_is_active": boolean,"project_manager_name": string,"start_date": string,"status": Database["public"]['Enums']["project_status"],"target_date": string,"updated_at": string
             }[]
                            },
+"list_assignable_developers":
+{ Args: { "p_limit"?: number,"p_project_id": string,"p_search"?: string }; Returns: {
+              "email": string,"full_name": string,"id": string
+            }[]
+                           },
 "list_employees":
 { Args: { "p_is_active"?: boolean,"p_page"?: number,"p_page_size"?: number,"p_role"?: Database["public"]['Enums']["app_role"],"p_search"?: string }; Returns: {
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"],"total_count": number
@@ -167,6 +207,11 @@ isOneToOne: false
 "list_project_manager_options":
 { Args: Record<PropertyKey, never>; Returns: {
               "email": string,"full_name": string,"id": string
+            }[]
+                           },
+"list_project_members":
+{ Args: { "p_project_id": string }; Returns: {
+              "added_by": string,"added_by_name": string,"created_at": string,"email": string,"full_name": string,"id": string,"is_active": boolean,"profile_id": string,"role": Database["public"]['Enums']["app_role"]
             }[]
                            },
 "list_projects":
@@ -178,6 +223,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "avatar_kind": string,"avatar_path": string,"avatar_symbol": string,"previous_path": string
             }[]
+                           },
+"remove_project_member":
+{ Args: { "p_profile_id": string,"p_project_id": string }; Returns: string
                            },
 "restore_project":
 { Args: { "p_project_id": string }; Returns: string
