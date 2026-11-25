@@ -51,8 +51,9 @@ role is accepted as an argument. Pending email uniqueness is enforced in Postgre
 The Auth insert trigger links a matching valid pending invitation by email,
 ignores editable metadata and creates an inactive profile with the assigned role,
 inviter and `requires_onboarding = true`. Auth invitations without an authorized
-database record fail closed. Non-invitation provisioning retains the old default
-profile behavior. Existing profiles have the new flag false; their name, role,
+database record fail closed. Since Phase 7 (H1, `20261124140000`), an account
+created without any invitation gets an inactive DEVELOPER profile and has no
+access until a Super Admin activates it. Existing profiles have the new flag false; their name, role,
 active state and NULL `onboarded_at` are not changed or backfilled.
 
 Lifecycle: PENDING → ACCEPTED → ONBOARDING → COMPLETED. REVOKED is terminal.

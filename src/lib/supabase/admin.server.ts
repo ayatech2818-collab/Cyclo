@@ -1,20 +1,31 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseEnv } from "./env";
+import { isAcceptableSecretKey, resolveInvitationTargets } from "./invitation-origins";
 import type { Database } from "@/types/database";
 
-/** Auth Admin only. Never use this client for ordinary profile/RPC mutations. */
+/*
+ * Auth Admin only (invitation and resume emails). Never use this client for
+ * ordinary profile/RPC mutations. Targets are validated on every call: a local
+ * Supabase stack with a local app origin, or a hosted Supabase project with an
+ * explicitly configured https production origin (see invitation-origins.ts).
+ */
+
+/** Auth Admin client for the validated Supabase project. */
 export function createAuthAdminClient() {
   const { url } = getSupabaseEnv();
-  // Phase 5 has local-only deployment authorization.
-  if (!["localhost", "127.0.0.1", "[::1]"].includes(new URL(url).hostname)) throw new Error("Invitation administration is currently enabled for local Supabase only.");
+  const targets = resolveInvitationTargets(url, process.env.CYCLO_APP_URL);
   const secret = process.env.SUPABASE_SECRET_KEY;
-  if (!secret || (!secret.startsWith("sb_secret_") && secret.split(".").length !== 3)) throw new Error("Configure server-only SUPABASE_SECRET_KEY for local Auth Admin.");
-  return createClient<Database>(url, secret, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+  if (!isAcceptableSecretKey(secret, targets.mode)) {
+    throw new Error("Configure the server-only SUPABASE_SECRET_KEY for Auth Admin.");
+  }
+  return createClient<Database>(targets.supabaseOrigin, secret, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
 }
 
+/** Exact Auth redirect target for invitation and resume emails: `<app origin>/auth/confirm`. */
 export function invitationCallbackUrl(): string {
-  const url = new URL(process.env.CYCLO_APP_URL ?? "http://127.0.0.1:3000");
-  if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || url.username || url.password || url.search || url.hash || url.pathname !== "/") throw new Error("Configure CYCLO_APP_URL as the local application origin.");
-  return `${url.origin}/auth/confirm`;
+  const { url } = getSupabaseEnv();
+  return resolveInvitationTargets(url, process.env.CYCLO_APP_URL).callbackUrl;
 }

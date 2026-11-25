@@ -9,7 +9,7 @@ The database, RPC and Storage security model holds up under review and testing. 
 | Severity | Count | Items | Status |
 | --- | --- | --- | --- |
 | High | 1 | H1 | **Fixed locally** (hosted sign-up setting still to confirm at deployment) |
-| Medium | 4 | M1–M4 | M1 **fixed locally**; M2–M4 open |
+| Medium | 4 | M1–M4 | M1 and M2 **fixed locally**; M3–M4 open |
 | Low | 6 | L1–L6 | Open |
 | Info | 5 | I1–I5 | Noted |
 
@@ -84,7 +84,7 @@ The `auth.users` insert trigger provisions any Auth user that has no matching in
 ### Medium
 **M1 — No HTTP security headers. Status: fixed locally (section 7.2); HSTS and a full script CSP remain for deployment.** Responses carry no `X-Frame-Options`/`frame-ancestors` (admin actions could be framed for clickjacking), no `X-Content-Type-Options`, `Referrer-Policy` or HSTS, and expose `X-Powered-By: Next.js`. Recommended: add a headers block in `next.config.ts` (`frame-ancestors 'none'`, `nosniff`, `strict-origin-when-cross-origin`, HSTS on hosted) and `poweredByHeader: false`; a full CSP can follow.
 
-**M2 — Hosted deployment guards still active (intentional).** `createAuthAdminClient()` and `invitationCallbackUrl()` accept loopback hosts only, so invitations cannot be sent from a hosted deployment until these are changed to an explicit allowlist of the production origin.
+**M2 — Hosted deployment guards. Status: resolved locally 2026-11-25 as deployment blocker B1 (section 8).** Originally: `createAuthAdminClient()` and `invitationCallbackUrl()` accept loopback hosts only, so invitations cannot be sent from a hosted deployment until these are changed to an explicit allowlist of the production origin.
 
 **M3 — Hosted migration history is empty.** Only the two Phase 1 migrations exist on hosted (applied manually). Eight more must be applied in order (`20261120130000` … `20261124120000`). Decide between repairing history (`supabase migration repair --status applied 20261119120000 20261120095347`, then `db push`) and manual application. This also resolves the original PGRST202 error.
 
@@ -177,3 +177,19 @@ Browser check on the production build (`127.0.0.1:3105`): logout and login, avat
 ### 7.4 Remaining
 
 M2 (deployment guards), M3 (hosted migrations), M4 (password policy), the M1 follow-ups (HSTS, nonce-based script CSP), L1–L6 and the deployment checklist in section 5 — all require further approval.
+
+## 8. Approved fix B1 / M2 — production invitation support (2026-11-25, local only)
+
+- New `src/lib/supabase/invitation-origins.ts`: exact validation of the Supabase URL and `CYCLO_APP_URL` pairing (local loopback, or `https://<ref>.supabase.co` + explicit https public origin with default port); legacy service-role JWTs accepted only locally. Details: DEPLOYMENT.md section 4.4.
+- `src/lib/supabase/admin.server.ts` uses it for both the Admin client and the emailed callback URL; the client now connects to the validated origin. Nothing else in the invitation flow changed: database authority, identity binding, expiry, replay protection, onboarding guards and the safe delivery-failure path are untouched.
+- Tests: new `tests/invitation-origins.test.mjs` (9 tests: local URLs, production URLs, look-alike/arbitrary Supabase hosts, http/ports/IPs/paths/credentials, missing production origin, mixed pairings, no value echo, secret-key rules, Admin client wiring). The shared TS test loader now also exposes `process` (needed to test environment-based wiring).
+
+| Check | Result |
+| --- | --- |
+| `pnpm lint` / `pnpm typecheck` | Pass |
+| `pnpm test` | 173/173 (164 + 9) |
+| `pnpm test:integration` | 98/98, including the 8 invitation tests (real invite Server Action, Mailpit email, callback, resend, onboarding) against a fresh production build |
+| `pnpm test:db` | 315/315 (no database change) |
+| `pnpm build` | Pass |
+
+Still open and needing approval: M3 (hosted migrations), M4 (hosted password policy), HSTS / script CSP follow-ups, L1–L6, and the deployment itself.
