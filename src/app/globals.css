@@ -32,6 +32,10 @@
   --primary-foreground: #ffffff;
   --ring: #6366f1;
 
+  /* Orange accent: highlights only (keys, emphasis); never primary actions. */
+  --accent: #c2410c;
+  --accent-foreground: #ffffff;
+
   --success: #047857;
   --warning: #b45309;
   --danger: #dc2626;
@@ -69,6 +73,9 @@
   --primary-foreground: #0a0c10;
   --ring: #8b8cf8;
 
+  --accent: #fb923c;
+  --accent-foreground: #0a0c10;
+
   --success: #34d399;
   --warning: #fbbf24;
   --danger: #f87171;
@@ -101,6 +108,9 @@
     --primary-foreground: #0a0c10;
     --ring: #8b8cf8;
 
+  --accent: #fb923c;
+  --accent-foreground: #0a0c10;
+
     --success: #34d399;
     --warning: #fbbf24;
     --danger: #f87171;
@@ -129,6 +139,8 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-ring: var(--ring);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);

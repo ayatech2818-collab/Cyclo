@@ -25,19 +25,20 @@ export function AppHeader({ profile, theme, avatar = null }: { profile: ActivePr
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/75">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
-        <Link href="/dashboard" className="flex items-center gap-2 rounded-md" aria-label="CYCLO dashboard">
+        <Link href="/dashboard" className="flex shrink-0 items-center gap-2 rounded-md" aria-label="CYCLO dashboard">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Orbit aria-hidden="true" className="size-4.5" strokeWidth={2} />
           </span>
           <span className="hidden text-sm font-semibold tracking-widest sm:inline">CYCLO</span>
         </Link>
 
-        <nav aria-label="Main" className="flex items-center gap-1">
+        <nav aria-label="Main" className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
           <NavLink href="/dashboard">Dashboard</NavLink>
+          <NavLink href="/projects">Projects</NavLink>
           {canViewDirectory(profile.role) && <NavLink href="/employees">Employees</NavLink>}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
           <ThemeToggle initial={theme} variant="compact" />
           <Link
             href="/profile"
