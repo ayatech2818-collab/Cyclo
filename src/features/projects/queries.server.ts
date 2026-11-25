@@ -1,8 +1,10 @@
 import "server-only";
 
 import { requireActiveProfile } from "@/features/auth/server";
+import { loadAvatars } from "@/features/profile/avatars.server";
 import { createClient } from "@/lib/supabase/server";
 
+import { ACTIVITY_PAGE_SIZE, toActivityEntry, type ActivityCursor, type ActivityEntry, type ActivityPage } from "./activity";
 import { projectTotalCount, toDeveloperOption, toProjectDetail, toProjectListItem, toProjectManagerOption, toProjectMember } from "./dto";
 import { ProjectError, describeProjectFailure, mapProjectDatabaseError } from "./errors";
 import type { DeveloperOption, ProjectDetail, ProjectListPage, ProjectListQuery, ProjectManagerOption, ProjectMember } from "./types";
@@ -106,4 +108,43 @@ export async function searchAssignableDevelopers(projectId: string, search: unkn
   });
   if (error) failProject("list_assignable_developers", error);
   return ((data ?? []) as unknown[]).map(toDeveloperOption);
+}
+
+/**
+ * One page of project activity, newest first. Access is decided by the
+ * database (SA, assigned PM, member developer). Actor photos are resolved
+ * through the existing avatar RPC, which only signs photos the caller may see;
+ * otherwise the emoji/icon choice or initials are shown.
+ */
+export async function listProjectActivity(projectId: string, cursor: ActivityCursor | null = null): Promise<ActivityPage> {
+  await requireActiveProfile();
+  if (!isUuid(projectId)) throw new ProjectError("not_found");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("list_project_activity", {
+    p_project_id: projectId,
+    p_before_created_at: cursor?.createdAt,
+    p_before_id: cursor?.id,
+    // One extra row tells us whether another page exists.
+    p_limit: ACTIVITY_PAGE_SIZE + 1,
+  });
+  if (error) failProject("list_project_activity", error);
+
+  const rows: unknown[] = data ?? [];
+  const hasMore = rows.length > ACTIVITY_PAGE_SIZE;
+  const pageRows = rows.slice(0, ACTIVITY_PAGE_SIZE);
+  const actorIds = pageRows.flatMap((row) => {
+    const id = (row as { actor_id?: unknown } | null)?.actor_id;
+    return isUuid(id) ? [id] : [];
+  });
+  // Decorative: on any failure loadAvatars returns an empty map.
+  const avatars = await loadAvatars(actorIds);
+  const entries = pageRows.map((row) => toActivityEntry(row, avatars)).filter((entry): entry is ActivityEntry => entry !== null);
+
+  // The cursor comes from the last DB row, so unknown event types never break paging.
+  const lastRow = pageRows[pageRows.length - 1] as { id?: unknown; created_at?: unknown } | undefined;
+  const nextCursor =
+    hasMore && lastRow && isUuid(lastRow.id) && typeof lastRow.created_at === "string"
+      ? { createdAt: lastRow.created_at, id: lastRow.id }
+      : null;
+  return { entries, nextCursor };
 }

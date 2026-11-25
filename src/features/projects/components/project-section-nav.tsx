@@ -2,10 +2,10 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils/cn";
 
-export type ProjectSection = "overview" | "team";
+export type ProjectSection = "overview" | "team" | "activity";
 
 /**
- * Project sections. Overview (8A) and Team (8B) exist; the others are shown
+ * Project sections. Overview (8A), Team (8B) and Activity (8C) exist; the others are shown
  * as unavailable (not links) so no empty or fake pages are reachable.
  */
 const SECTIONS = [
@@ -13,7 +13,7 @@ const SECTIONS = [
   { id: "team", label: "Team", path: "/team" },
   { id: "work", label: "Work", path: null },
   { id: "sprints", label: "Sprints", path: null },
-  { id: "activity", label: "Activity", path: null },
+  { id: "activity", label: "Activity", path: "/activity" },
 ] as const;
 
 export function ProjectSectionNav({ projectId, current }: { projectId: string; current: ProjectSection }) {
@@ -23,7 +23,8 @@ export function ProjectSectionNav({ projectId, current }: { projectId: string; c
         {SECTIONS.map((section) => {
           const active = section.id === current;
           return (
-            <li key={section.id}>
+            // Placeholders are hidden on phones so every real section fits on screen.
+            <li key={section.id} className={section.path === null ? "hidden sm:block" : undefined}>
               {section.path !== null ? (
                 <Link
                   href={`/projects/${projectId}${section.path}`}
