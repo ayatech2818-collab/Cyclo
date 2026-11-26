@@ -36,8 +36,8 @@ export const PARENT_TYPES: Record<WorkItemType, { allowed: readonly WorkItemType
 };
 
 /**
- * Default workflow. Mirrors private.work_item_transitions (a unit test keeps
- * them equal). managerOnly moves need SA or the assigned PM. Leaving BLOCKED
+ * Default workflow. Mirrors private.work_item_transitions as of Phase 8F2
+ * (review decisions are manager-only; a unit test keeps them equal). managerOnly moves need SA or the assigned PM. Leaving BLOCKED
  * for an active status is further limited to the status it was blocked from.
  */
 export const WORK_ITEM_TRANSITIONS: readonly { from: WorkItemStatus; to: WorkItemStatus; managerOnly: boolean }[] = [
@@ -51,8 +51,8 @@ export const WORK_ITEM_TRANSITIONS: readonly { from: WorkItemStatus; to: WorkIte
   { from: "IN_PROGRESS", to: "IN_REVIEW", managerOnly: false },
   { from: "IN_PROGRESS", to: "BLOCKED", managerOnly: false },
   { from: "IN_PROGRESS", to: "CANCELLED", managerOnly: true },
-  { from: "IN_REVIEW", to: "IN_PROGRESS", managerOnly: false },
-  { from: "IN_REVIEW", to: "DONE", managerOnly: false },
+  { from: "IN_REVIEW", to: "IN_PROGRESS", managerOnly: true },
+  { from: "IN_REVIEW", to: "DONE", managerOnly: true },
   { from: "IN_REVIEW", to: "BLOCKED", managerOnly: false },
   { from: "IN_REVIEW", to: "CANCELLED", managerOnly: true },
   { from: "BLOCKED", to: "TODO", managerOnly: false },

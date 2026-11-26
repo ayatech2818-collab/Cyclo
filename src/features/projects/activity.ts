@@ -32,11 +32,28 @@ export const ACTIVITY_ACTIONS = [
   "WORK_ITEM_STATUS_CHANGED",
   "WORK_ITEM_ARCHIVED",
   "WORK_ITEM_RESTORED",
+  "WORK_ITEM_REORDERED",
+  "WORK_ITEM_ADDED_TO_SPRINT",
+  "WORK_ITEM_REMOVED_FROM_SPRINT",
+  "WORK_ITEM_MOVED_BETWEEN_SPRINTS",
+  "WORK_ITEM_STARTED",
+  "WORK_ITEM_SUBMITTED_FOR_REVIEW",
+  "WORK_ITEM_REVIEW_APPROVED",
+  "WORK_ITEM_REVIEW_REJECTED",
+  "WORK_ITEM_BLOCKED",
+  "WORK_ITEM_RESUMED",
+  "SPRINT_CREATED",
+  "SPRINT_UPDATED",
+  "SPRINT_CAPACITY_CHANGED",
+  "SPRINT_STARTED",
+  "SPRINT_COMPLETED",
+  "SPRINT_CANCELLED",
 ] as const;
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
 export const ACTIVITY_FIELDS = [
   "name", "project_key", "title", "type", "status", "priority", "start_date", "target_date", "due_date", "estimate", "description",
+  "end_date", "capacity_points", "goal", "completed_items", "carried_over", "returned_items", "reason",
 ] as const;
 export type ActivityField = (typeof ACTIVITY_FIELDS)[number];
 
@@ -57,6 +74,8 @@ export type ActivityEntry = {
   changes: ActivityChange[];
   /** Set for WORK_ITEM_* events. */
   workItem: { id: string; issueKey: string; title: string } | null;
+  /** Set for sprint events and sprint membership events. */
+  sprint: { id: string; name: string } | null;
 };
 
 export type ActivityPage = { entries: ActivityEntry[]; nextCursor: ActivityCursor | null };
@@ -134,7 +153,16 @@ export function toActivityEntry(value: unknown, avatars: ReadonlyMap<string, Res
     previousSubjectName: optionalStr(row, "previous_subject_name"),
     changes: parseChanges(row.changes),
     workItem: parseWorkItem(row),
+    sprint: parseSprint(row),
   };
+}
+
+function parseSprint(row: Row): ActivityEntry["sprint"] {
+  const id = optionalStr(row, "sprint_id");
+  const name = optionalStr(row, "sprint_name");
+  if (!id || !name) return null;
+  if (!isUuid(id)) throw new ProjectError("unexpected");
+  return { id, name };
 }
 
 function parseWorkItem(row: Row): ActivityEntry["workItem"] {
@@ -162,6 +190,13 @@ export const FIELD_LABELS: Record<ActivityField, string> = {
   due_date: "Due date",
   estimate: "Estimate",
   description: "Description",
+  end_date: "End date",
+  capacity_points: "Capacity",
+  goal: "Goal",
+  completed_items: "Completed items",
+  carried_over: "Carried over",
+  returned_items: "Returned to backlog",
+  reason: "Reason",
 };
 
 function displayValue(field: ActivityField, value: string | null): string {
@@ -170,7 +205,8 @@ function displayValue(field: ActivityField, value: string | null): string {
   if (field === "status" && isWorkItemStatus(value)) return WORK_STATUS_LABELS[value];
   if (field === "type" && isWorkItemType(value)) return TYPE_LABELS[value];
   if (field === "priority" && isProjectPriority(value)) return PRIORITY_LABELS[value];
-  if (field === "start_date" || field === "target_date" || field === "due_date") return formatProjectDate(value) ?? value;
+  if (field === "start_date" || field === "target_date" || field === "due_date" || field === "end_date") return formatProjectDate(value) ?? value;
+  if (field === "capacity_points") return `${Number(value)} pts`;
   return value;
 }
 
@@ -186,6 +222,13 @@ const SINGLE_FIELD_PHRASES: Record<ActivityField, string> = {
   due_date: "changed the due date of",
   estimate: "changed the estimate of",
   description: "updated the project description",
+  end_date: "changed the end date",
+  capacity_points: "changed the capacity",
+  goal: "updated the goal",
+  completed_items: "completed",
+  carried_over: "carried over work",
+  returned_items: "returned work",
+  reason: "updated the reason",
 };
 
 const WORK_FIELD_PHRASES: Partial<Record<ActivityField, string>> = {
@@ -201,7 +244,7 @@ export function actorLabel(entry: Pick<ActivityEntry, "actorName">): string {
 }
 
 /** The predicate after the actor's name, e.g. "added Dev Kumar to the team". */
-export function describeActivity(entry: Pick<ActivityEntry, "action" | "subjectName" | "previousSubjectName" | "changes" | "workItem">): string {
+export function describeActivity(entry: Pick<ActivityEntry, "action" | "subjectName" | "previousSubjectName" | "changes" | "workItem"> & { sprint?: ActivityEntry["sprint"] }): string {
   const subject = entry.subjectName?.trim() || "a former employee";
   const item = entry.workItem?.issueKey ?? "a work item";
   switch (entry.action) {
@@ -244,27 +287,75 @@ export function describeActivity(entry: Pick<ActivityEntry, "action" | "subjectN
       return `archived ${item}`;
     case "WORK_ITEM_RESTORED":
       return `restored ${item}`;
+    case "WORK_ITEM_REORDERED":
+      // subject = next item, previous = preceding item (backlog-visible neighbours at move time).
+      if (entry.subjectName && !entry.previousSubjectName) return `moved ${item} to the top of the backlog, above ${entry.subjectName}`;
+      if (entry.previousSubjectName && !entry.subjectName) return `moved ${item} to the bottom of the backlog, below ${entry.previousSubjectName}`;
+      if (entry.previousSubjectName && entry.subjectName) return `moved ${item} between ${entry.previousSubjectName} and ${entry.subjectName} in the backlog`;
+      return `reordered ${item} in the backlog`;
+    case "WORK_ITEM_ADDED_TO_SPRINT":
+      return `added ${item} to ${entry.subjectName ?? "a sprint"}`;
+    case "WORK_ITEM_REMOVED_FROM_SPRINT":
+      return `returned ${item} from ${entry.subjectName ?? "a sprint"} to the backlog`;
+    case "WORK_ITEM_MOVED_BETWEEN_SPRINTS":
+      return `moved ${item} from ${entry.previousSubjectName ?? "a sprint"} to ${entry.subjectName ?? "a sprint"}`;
+    case "WORK_ITEM_STARTED":
+      return `started work on ${item}`;
+    case "WORK_ITEM_SUBMITTED_FOR_REVIEW":
+      return `submitted ${item} for review`;
+    case "WORK_ITEM_REVIEW_APPROVED":
+      return `approved ${item}`;
+    case "WORK_ITEM_REVIEW_REJECTED":
+      return `requested changes on ${item}`;
+    case "WORK_ITEM_BLOCKED":
+      return `marked ${item} as blocked`;
+    case "WORK_ITEM_RESUMED":
+      return `resumed work on ${item}`;
+    case "SPRINT_CREATED":
+      return `created ${sprintName(entry)}`;
+    case "SPRINT_UPDATED":
+      return `updated ${sprintName(entry)}`;
+    case "SPRINT_CAPACITY_CHANGED":
+      return `changed the capacity of ${sprintName(entry)}`;
+    case "SPRINT_STARTED":
+      return `started ${sprintName(entry)}`;
+    case "SPRINT_COMPLETED": {
+      const carried = Number(entry.changes.find((change) => change.field === "carried_over")?.to ?? 0);
+      if (!carried) return `completed ${sprintName(entry)}`;
+      return `completed ${sprintName(entry)} and carried ${carried} unfinished item${carried === 1 ? "" : "s"} to ${entry.previousSubjectName ?? "the backlog"}`;
+    }
+    case "SPRINT_CANCELLED":
+      return `cancelled ${sprintName(entry)}`;
   }
+}
+
+function sprintName(entry: { sprint?: ActivityEntry["sprint"] }): string {
+  return entry.sprint?.name ?? "a sprint";
 }
 
 export type ActivityDetail = { label: string; from: string | null; to: string };
 
 /** Field-level details shown under an entry. Description text is never available. */
 export function activityDetails(entry: Pick<ActivityEntry, "action" | "changes">): ActivityDetail[] {
-  if (entry.action === "PROJECT_CREATED" || entry.action === "WORK_ITEM_CREATED") {
+  if (entry.action === "PROJECT_CREATED" || entry.action === "WORK_ITEM_CREATED" || entry.action === "SPRINT_CREATED") {
     // The name/title is already part of the sentence.
     return entry.changes
       .filter((change) => change.field !== "name" && change.field !== "title")
       .map((change) => ({
         label: FIELD_LABELS[change.field],
         from: null,
-        to: change.field === "description" ? "Added" : displayValue(change.field, change.to),
+        to: change.field === "description" || change.field === "goal" ? "Added" : displayValue(change.field, change.to),
       }));
   }
-  if (entry.action === "PROJECT_UPDATED" || entry.action.startsWith("WORK_ITEM_")) {
+  if (entry.action === "SPRINT_COMPLETED" || entry.action === "SPRINT_CANCELLED") {
+    return entry.changes.map((change) => ({ label: FIELD_LABELS[change.field], from: null, to: change.to ?? "0" }));
+  }
+  if (entry.action === "PROJECT_UPDATED" || entry.action.startsWith("WORK_ITEM_") || entry.action === "SPRINT_UPDATED" || entry.action === "SPRINT_CAPACITY_CHANGED") {
     return entry.changes.map((change) =>
-      change.field === "description"
-        ? { label: FIELD_LABELS.description, from: null, to: "Updated" }
+      change.field === "reason"
+        ? { label: FIELD_LABELS.reason, from: null, to: change.to ?? "Not recorded" }
+        : change.field === "description" || change.field === "goal"
+        ? { label: FIELD_LABELS[change.field], from: null, to: "Updated" }
         : { label: FIELD_LABELS[change.field], from: displayValue(change.field, change.from), to: displayValue(change.field, change.to) },
     );
   }
@@ -290,6 +381,22 @@ export const ACTIVITY_TONES: Record<ActivityAction, ActivityTone> = {
   WORK_ITEM_STATUS_CHANGED: "success",
   WORK_ITEM_ARCHIVED: "warning",
   WORK_ITEM_RESTORED: "success",
+  WORK_ITEM_REORDERED: "neutral",
+  WORK_ITEM_ADDED_TO_SPRINT: "primary",
+  WORK_ITEM_REMOVED_FROM_SPRINT: "neutral",
+  WORK_ITEM_MOVED_BETWEEN_SPRINTS: "accent",
+  WORK_ITEM_STARTED: "accent",
+  WORK_ITEM_SUBMITTED_FOR_REVIEW: "primary",
+  WORK_ITEM_REVIEW_APPROVED: "success",
+  WORK_ITEM_REVIEW_REJECTED: "warning",
+  WORK_ITEM_BLOCKED: "danger",
+  WORK_ITEM_RESUMED: "accent",
+  SPRINT_CREATED: "primary",
+  SPRINT_UPDATED: "neutral",
+  SPRINT_CAPACITY_CHANGED: "neutral",
+  SPRINT_STARTED: "accent",
+  SPRINT_COMPLETED: "success",
+  SPRINT_CANCELLED: "danger",
 };
 
 // ---------------------------------------------------------------------------

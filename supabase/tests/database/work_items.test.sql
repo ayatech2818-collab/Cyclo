@@ -128,13 +128,20 @@ select is((select issue_key from public.work_items where title = 'Spoof'), 'WIB-
 reset role; select pg_temp.login('dev1'); set local role authenticated; -- dev1 is assigned to 'task' (TODO)
 select throws_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'DONE')$q$, '22023', 'invalid_transition', 'TODO -> DONE is not allowed');
 select lives_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'IN_PROGRESS')$q$, 'assignee: TODO -> IN_PROGRESS');
-select lives_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'BLOCKED')$q$, 'assignee: IN_PROGRESS -> BLOCKED');
+select throws_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'BLOCKED')$q$, '22023', 'blocked_reason_required', 'blocking needs a reason (8F2)');
+select lives_ok($q$select public.execute_work_item(pg_temp.id('task'), 'block', 'IN_PROGRESS', 'Waiting for API keys')$q$, 'assignee: IN_PROGRESS -> BLOCKED with a reason');
 select throws_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'TODO')$q$, '22023', 'invalid_transition', 'BLOCKED returns only to its previous status');
 select lives_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'IN_PROGRESS')$q$, 'BLOCKED -> previous status');
 select lives_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'IN_REVIEW')$q$, 'IN_PROGRESS -> IN_REVIEW');
-select lives_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'IN_PROGRESS')$q$, 'review rejected -> IN_PROGRESS');
+select throws_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'DONE')$q$, '42501', 'forbidden', 'developer cannot approve their own work (8F2)');
+select throws_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'IN_PROGRESS')$q$, '42501', 'forbidden', 'developer cannot reject a review (8F2)');
+reset role; select pg_temp.login('pm1'); set local role authenticated;
+select lives_ok($q$select public.execute_work_item(pg_temp.id('task'), 'reject', 'IN_REVIEW', 'Missing tests')$q$, 'review rejected -> IN_PROGRESS (manager, with reason)');
+reset role; select pg_temp.login('dev1'); set local role authenticated;
 select lives_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'IN_REVIEW')$q$, 'back to review');
-select lives_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'DONE')$q$, 'IN_REVIEW -> DONE');
+reset role; select pg_temp.login('pm1'); set local role authenticated;
+select lives_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'DONE')$q$, 'IN_REVIEW -> DONE (manager approves)');
+reset role; select pg_temp.login('dev1'); set local role authenticated;
 select throws_ok($q$select public.change_work_item_status(pg_temp.id('task'), 'IN_PROGRESS')$q$, '42501', 'forbidden', 'developer cannot reopen (manager-only)');
 reset role;
 select ok((select completed_at is not null and blocked_from_status is null from public.work_items where id = pg_temp.id('task')), 'completed_at set on DONE');
@@ -245,10 +252,12 @@ select lives_ok($q$select public.restore_project(pg_temp.id('p1'))$q$, 'restore 
 reset role;
 select set_eq($q$select distinct action from private.project_audit_log where project_id = pg_temp.id('p1') and action like 'WORK_ITEM_%'$q$,
   array['WORK_ITEM_CREATED','WORK_ITEM_UPDATED','WORK_ITEM_TYPE_CHANGED','WORK_ITEM_PARENT_CHANGED','WORK_ITEM_ASSIGNED',
-        'WORK_ITEM_PRIORITY_CHANGED','WORK_ITEM_STATUS_CHANGED','WORK_ITEM_ARCHIVED','WORK_ITEM_RESTORED'], 'every work item event is audited');
+        'WORK_ITEM_PRIORITY_CHANGED','WORK_ITEM_STATUS_CHANGED','WORK_ITEM_ARCHIVED','WORK_ITEM_RESTORED',
+        'WORK_ITEM_BLOCKED','WORK_ITEM_REVIEW_REJECTED'], 'every work item event is audited');
 select is((select count(*)::int from private.project_audit_log where action = 'WORK_ITEM_CREATED' and project_id = pg_temp.id('p1')), 10, 'one creation event per item');
 select ok((select bool_and(work_item_id is not null) from private.project_audit_log where action like 'WORK_ITEM_%'), 'work item events carry work_item_id');
-select is((select count(*)::int from private.project_audit_log where work_item_id = pg_temp.id('task') and action = 'WORK_ITEM_STATUS_CHANGED'), 8, 'every status transition audited');
+select is((select count(*)::int from private.project_audit_log where work_item_id = pg_temp.id('task')
+            and action in ('WORK_ITEM_STATUS_CHANGED', 'WORK_ITEM_BLOCKED', 'WORK_ITEM_REVIEW_REJECTED')), 8, 'every status transition audited');
 select is((select actor_id from private.project_audit_log where work_item_id = pg_temp.id('devtask') and action = 'WORK_ITEM_CREATED'), pg_temp.uid('dev1'), 'audit actor is the caller');
 select throws_ok($q$insert into private.project_audit_log (actor_id, project_id, action, old_values, new_values) values (pg_temp.uid('sa'), pg_temp.id('p1'), 'WORK_ITEM_CREATED', '{}', '{}')$q$, '23514', null, 'work item events require a work item id');
 

@@ -1,14 +1,18 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, ArrowRight, Pencil } from "lucide-react";
 
 import { control, dangerButton, label, primaryButton, secondaryButton } from "@/features/projects/components/styles";
 import { PRIORITY_LABELS, PROJECT_PRIORITIES } from "@/features/projects/types";
 import { cn } from "@/lib/utils/cn";
 
-import { assignAction, changePriorityAction, changeStatusAction, setArchivedAction, setHierarchyAction, type WorkItemFormState } from "../actions";
-import { PARENT_TYPES, TYPE_LABELS, WORK_ITEM_TYPES, WORK_STATUS_LABELS, type WorkItemDetail, type WorkItemStatus, type WorkItemType } from "../types";
+import { assignAction, changePriorityAction, setArchivedAction, setHierarchyAction, type WorkItemFormState } from "../actions";
+import type { Move } from "../execution";
+import { moveWorkItemAction, type MoveResult } from "../execution-actions";
+import { PARENT_TYPES, TYPE_LABELS, WORK_ITEM_TYPES, WORK_STATUS_LABELS, type WorkItemDetail, type WorkItemType } from "../types";
+import { MoveDialog, type PendingMove } from "./move-dialog";
 import { ParentPicker, type SelectedParent } from "./parent-picker";
 import { WorkStatusBadge } from "./work-badges";
 import { EditWorkItemForm, type AssigneeOption } from "./work-item-form";
@@ -31,8 +35,24 @@ function useAction() {
   return { state, pending, run };
 }
 
-export function StatusControl({ item, nextStatuses }: { item: WorkItemDetail; nextStatuses: WorkItemStatus[] }) {
-  const { state, pending, run } = useAction();
+/**
+ * Execution-aware status control: start, submit for review, block (reason),
+ * resume, approve / request changes (managers), plus the remaining workflow
+ * moves. The expected status guards against acting on a stale page.
+ */
+export function StatusControl({ item, moves, sprintId }: { item: WorkItemDetail; moves: Move[]; sprintId: string | null }) {
+  const router = useRouter();
+  const [result, setResult] = useState<MoveResult | null>(null);
+  const [pending, start] = useTransition();
+  const [dialog, setDialog] = useState<PendingMove | null>(null);
+  const run = (move: Move, reason: string | null) =>
+    start(async () => {
+      const outcome = await moveWorkItemAction({ projectId: item.projectId, sprintId, workItemId: item.id, from: item.status, to: move.to, action: move.action, reason, refresh: true });
+      setResult(outcome);
+      if (!outcome.ok && outcome.conflict) router.refresh();
+    });
+  const request = (move: Move) => (move.needsReason || move.confirm ? setDialog({ move, itemKey: item.issueKey, itemTitle: item.title }) : run(move, null));
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -41,25 +61,34 @@ export function StatusControl({ item, nextStatuses }: { item: WorkItemDetail; ne
           <span className="text-xs text-text-secondary">was {WORK_STATUS_LABELS[item.blockedFromStatus]}</span>
         )}
       </div>
-      {nextStatuses.length > 0 ? (
-        <div role="group" aria-label="Move to status" className="flex flex-wrap gap-2">
-          {nextStatuses.map((status) => (
+      {moves.length > 0 ? (
+        <div role="group" aria-label="Status actions" className="flex flex-wrap gap-2">
+          {moves.map((move) => (
             <button
-              key={status}
+              key={`${move.action ?? "status"}-${move.to}`}
               type="button"
               disabled={pending}
-              onClick={() => run(() => changeStatusAction(item.projectId, item.id, status))}
-              className={cn(secondaryButton, "h-8 gap-1.5 px-2.5 text-xs", status === "CANCELLED" && "text-danger", status === "DONE" && "text-success")}
+              onClick={() => request(move)}
+              className={cn(
+                move.tone === "primary" ? primaryButton : secondaryButton,
+                "h-8 gap-1.5 px-2.5 text-xs",
+                move.tone === "danger" && "text-danger",
+                move.tone === "success" && "border-success/40 text-success hover:bg-success/10",
+              )}
             >
-              <ArrowRight aria-hidden="true" className="size-3.5" />
-              {WORK_STATUS_LABELS[status]}
+              {move.action ? null : <ArrowRight aria-hidden="true" className="size-3.5" />}
+              {move.label}
             </button>
           ))}
         </div>
       ) : (
         <p className="text-xs text-text-muted">No status changes available to you.</p>
       )}
-      <Message state={state} />
+      <div aria-live="polite" className="min-h-0 text-xs">
+        {result && !result.ok && <p role="alert" className="text-danger">{result.error}</p>}
+        {result?.ok && <p role="status" className="text-success">{result.message}</p>}
+      </div>
+      <MoveDialog pending={dialog} onCancel={() => setDialog(null)} onSubmit={(reason) => { const current = dialog; setDialog(null); if (current) run(current.move, reason); }} />
     </div>
   );
 }

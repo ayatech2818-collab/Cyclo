@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
-import { Archive, ArchiveRestore, ArrowRight, CircleDot, FilePlus2, FolderPlus, GitBranch, Flag, History, Loader2, Pencil, Shapes, UserCheck, UserCog, UserMinus, UserPlus, type LucideIcon } from "lucide-react";
+import { BadgeCheck, OctagonAlert, Play, RotateCcw, SendHorizontal, StepForward, Archive, ArchiveRestore, ArrowRight, ArrowUpDown, CalendarCheck2, CalendarPlus, CalendarX2, Gauge, IterationCw, PlayCircle, Undo2, CircleDot, FilePlus2, FolderPlus, GitBranch, Flag, History, Loader2, Pencil, Shapes, UserCheck, UserCog, UserMinus, UserPlus, type LucideIcon } from "lucide-react";
 
 import { EmployeeAvatar } from "@/features/employees/components/employee-avatar";
 import { cn } from "@/lib/utils/cn";
@@ -41,6 +41,22 @@ const ICONS: Record<ActivityAction, LucideIcon> = {
   WORK_ITEM_STATUS_CHANGED: CircleDot,
   WORK_ITEM_ARCHIVED: Archive,
   WORK_ITEM_RESTORED: ArchiveRestore,
+  WORK_ITEM_REORDERED: ArrowUpDown,
+  WORK_ITEM_ADDED_TO_SPRINT: IterationCw,
+  WORK_ITEM_REMOVED_FROM_SPRINT: Undo2,
+  WORK_ITEM_MOVED_BETWEEN_SPRINTS: IterationCw,
+  WORK_ITEM_STARTED: Play,
+  WORK_ITEM_SUBMITTED_FOR_REVIEW: SendHorizontal,
+  WORK_ITEM_REVIEW_APPROVED: BadgeCheck,
+  WORK_ITEM_REVIEW_REJECTED: RotateCcw,
+  WORK_ITEM_BLOCKED: OctagonAlert,
+  WORK_ITEM_RESUMED: StepForward,
+  SPRINT_CREATED: CalendarPlus,
+  SPRINT_UPDATED: Pencil,
+  SPRINT_CAPACITY_CHANGED: Gauge,
+  SPRINT_STARTED: PlayCircle,
+  SPRINT_COMPLETED: CalendarCheck2,
+  SPRINT_CANCELLED: CalendarX2,
 };
 
 const TONE_CLASSES: Record<ActivityTone, string> = {
@@ -116,6 +132,13 @@ function ActivityItem({ entry, now, timeZone, last, projectId, showWorkItem }: {
           >
             <span className="font-mono text-xs text-text-muted">{entry.workItem.issueKey}</span>
             <span className="truncate font-medium text-text-primary">{entry.workItem.title}</span>
+          </Link>
+        )}
+
+        {showWorkItem && !entry.workItem && entry.sprint && (
+          <Link href={`/projects/${projectId}/sprints/${entry.sprint.id}`} className="mt-1.5 inline-flex max-w-full items-center gap-2 rounded-md px-1 text-sm hover:bg-surface-muted">
+            <IterationCw aria-hidden="true" className="size-3.5 text-text-muted" />
+            <span className="truncate font-medium text-text-primary">{entry.sprint.name}</span>
           </Link>
         )}
 

@@ -36,6 +36,10 @@
   --accent: #c2410c;
   --accent-foreground: #ffffff;
 
+  /* Burndown: actual (orange) vs ideal reference line (dashed gray). */
+  --chart-actual: #c2410c;
+  --chart-ideal: #64748b;
+
   --success: #047857;
   --warning: #b45309;
   --danger: #dc2626;
@@ -76,6 +80,9 @@
   --accent: #fb923c;
   --accent-foreground: #0a0c10;
 
+  --chart-actual: #ea580c;
+  --chart-ideal: #7f8899;
+
   --success: #34d399;
   --warning: #fbbf24;
   --danger: #f87171;
@@ -111,6 +118,9 @@
   --accent: #fb923c;
   --accent-foreground: #0a0c10;
 
+  --chart-actual: #ea580c;
+  --chart-ideal: #7f8899;
+
     --success: #34d399;
     --warning: #fbbf24;
     --danger: #f87171;
@@ -141,6 +151,8 @@
   --color-ring: var(--ring);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-chart-actual: var(--chart-actual);
+  --color-chart-ideal: var(--chart-ideal);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);

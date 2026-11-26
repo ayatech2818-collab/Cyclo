@@ -32,16 +32,29 @@ const entry = (overrides) => toActivityEntry(row(overrides));
 const migration = readFileSync(new URL("../supabase/migrations/20261127100000_project_activity_feed.sql", import.meta.url), "utf8");
 const projectsMigration = readFileSync(new URL("../supabase/migrations/20261125100000_projects_foundation.sql", import.meta.url), "utf8");
 const teamMigration = readFileSync(new URL("../supabase/migrations/20261126100000_project_team_members.sql", import.meta.url), "utf8");
-// Latest definition of the audit action CHECK constraint (Phase 8D adds work item events).
-const workMigration = readFileSync(new URL("../supabase/migrations/20261128100000_work_items_foundation.sql", import.meta.url), "utf8");
+// Latest definition of the audit action CHECK constraint (Phase 8F2 adds execution events).
+const workMigration = readFileSync(new URL("../supabase/migrations/20261201100000_sprint_execution.sql", import.meta.url), "utf8");
 
 test("the UI knows every audit event type the database records", () => {
   const check = workMigration.slice(workMigration.indexOf("add constraint project_audit_log_action_check"));
-  const recorded = [...check.slice(0, check.indexOf(";")).matchAll(/'((?:PROJECT|WORK_ITEM)_[A-Z_]+)'/g)].map((match) => match[1]);
-  assert.equal(recorded.length, 16);
+  const recorded = [...check.slice(0, check.indexOf(";")).matchAll(/'((?:PROJECT|WORK_ITEM|SPRINT)_[A-Z_]+)'/g)].map((match) => match[1]);
+  assert.equal(recorded.length, 32);
   for (const action of new Set(recorded)) assert.ok(ACTIVITY_ACTIONS.includes(action), action);
-  assert.equal(ACTIVITY_ACTIONS.length, 16);
+  assert.equal(ACTIVITY_ACTIONS.length, 32);
   assert.ok(teamMigration.includes("PROJECT_MEMBER_REMOVED"));
+});
+
+test("execution events read as sentences and show their reason", () => {
+  const item = { work_item_id: "00000000-0000-4000-a000-0000000000b1", work_item_key: "CYC-7", work_item_title: "Login" };
+  const said = (action, changes = []) => describeActivity(entry({ action, changes, ...item }));
+  assert.equal(said("WORK_ITEM_STARTED"), "started work on CYC-7");
+  assert.equal(said("WORK_ITEM_SUBMITTED_FOR_REVIEW"), "submitted CYC-7 for review");
+  assert.equal(said("WORK_ITEM_REVIEW_APPROVED"), "approved CYC-7");
+  assert.equal(said("WORK_ITEM_REVIEW_REJECTED"), "requested changes on CYC-7");
+  assert.equal(said("WORK_ITEM_BLOCKED"), "marked CYC-7 as blocked");
+  assert.equal(said("WORK_ITEM_RESUMED"), "resumed work on CYC-7");
+  const details = activityDetails(entry({ action: "WORK_ITEM_BLOCKED", ...item, changes: [{ field: "status", from: "IN_PROGRESS", to: "BLOCKED" }, { field: "reason", from: null, to: "Waiting on API keys" }] }));
+  assert.deepEqual(details, [{ label: "Status", from: "In progress", to: "Blocked" }, { label: "Reason", from: null, to: "Waiting on API keys" }]);
 });
 
 test("every event type reads as a human sentence", () => {

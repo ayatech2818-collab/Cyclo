@@ -61,6 +61,9 @@ export function createFixtures(prefix) {
         delete from public.work_items where ${items} and type = 'STORY';
         delete from public.work_items where ${items} and type = 'EPIC';
         alter table public.work_items enable trigger work_items_prevent_delete;
+        alter table public.sprints disable trigger sprints_prevent_delete;
+        delete from public.sprints where ${items};
+        alter table public.sprints enable trigger sprints_prevent_delete;
         alter table public.projects disable trigger projects_prevent_delete;
         delete from public.projects where project_manager_id in (${list}) or created_by in (${list});
         alter table public.projects enable trigger projects_prevent_delete;

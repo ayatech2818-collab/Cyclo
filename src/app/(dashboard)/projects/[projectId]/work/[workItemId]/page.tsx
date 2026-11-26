@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, ArrowLeft, CornerLeftUp, Plus } from "lucide-react";
+import { Archive, ArrowLeft, BadgeCheck, CornerLeftUp, KanbanSquare, OctagonAlert, Plus, RotateCcw } from "lucide-react";
 
 import { requireActiveProfile } from "@/features/auth/server";
 import { ProjectPriorityBadge } from "@/features/projects/components/project-badges";
@@ -14,6 +14,9 @@ import { getProject, listProjectActivity, listProjectMembers } from "@/features/
 import { isUuid } from "@/features/projects/validation";
 import { IssueKey, WorkStatusBadge, WorkTypeBadge, WorkTypeIcon } from "@/features/work-items/components/work-badges";
 import { AssigneeControl, HierarchyControl, PriorityControl, StatusControl, WorkItemArchiveControl, WorkItemContent } from "@/features/work-items/components/work-item-controls";
+import { SprintStatusBadge } from "@/features/sprints/components/sprint-parts";
+import { getWorkItemExecution } from "@/features/sprints/execution.server";
+import { availableMoves } from "@/features/work-items/execution";
 import { getWorkItem, listWorkItemChildren } from "@/features/work-items/queries.server";
 import { TYPE_LABELS } from "@/features/work-items/types";
 import { childTypesOf, creatableTypes, formatEstimate, isWorkManager, workItemPermissions } from "@/features/work-items/validation";
@@ -39,17 +42,18 @@ export default async function WorkItemPage({ params }: { params: Promise<{ proje
   if (!isUuid(projectId) || !isUuid(workItemId)) notFound();
 
   const result = await loadProjectForPage(async () => {
-    const [item, project, members, children, history] = await Promise.all([
+    const [item, project, members, children, history, execution] = await Promise.all([
       getWorkItem(workItemId),
       getProject(projectId),
       listProjectMembers(projectId),
       listWorkItemChildren(workItemId),
       listProjectActivity(projectId, null, workItemId),
+      getWorkItemExecution(workItemId),
     ]);
-    return { item, project, members, children, history };
+    return { item, project, members, children, history, execution };
   });
   if (result.error) return <ProjectLoadError code={result.error} retryHref={`/projects/${projectId}/work/${workItemId}`} />;
-  const { item, project, members, children, history } = result.data;
+  const { item, project, members, children, history, execution } = result.data;
   // An item from another project is treated as missing under this URL.
   if (!item || !project || item.projectId !== project.id) notFound();
 
@@ -62,6 +66,10 @@ export default async function WorkItemPage({ params }: { params: Promise<{ proje
   }));
   const childTypes = childTypesOf(item.type).filter((type) => creatableTypes(isManager, profile.role).includes(type));
   const estimate = formatEstimate(item.estimate);
+  const moves = availableMoves(item, { id: profile.id, isManager, writable });
+  const sprint = execution?.sprintId && execution.sprintName && execution.sprintStatus
+    ? { id: execution.sprintId, name: execution.sprintName, status: execution.sprintStatus } : null;
+  const review = execution?.lastReview ?? null;
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
@@ -156,7 +164,43 @@ export default async function WorkItemPage({ params }: { params: Promise<{ proje
         <aside className="space-y-6">
           <section className={cn(card, "space-y-4 p-5")} aria-labelledby="wi-status-heading">
             <h2 id="wi-status-heading" className="text-sm font-semibold text-text-secondary">Status</h2>
-            <StatusControl item={item} nextStatuses={permissions.nextStatuses} />
+            {item.status === "BLOCKED" && (
+              <p className="flex gap-2 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+                <OctagonAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span className="min-w-0 break-words"><span className="font-medium">Blocked:</span> {execution?.blockedReason ?? "No reason recorded."}</span>
+              </p>
+            )}
+            {/* Keyed on status: a finished move resets the control to the new state's actions. */}
+            <StatusControl key={item.status} item={item} moves={moves} sprintId={sprint?.id ?? null} />
+            {review && (
+              <div className="border-t border-border pt-3 text-xs">
+                <p className={cn("flex items-center gap-1.5 font-medium", review.decision === "approved" ? "text-success" : "text-warning")}>
+                  {review.decision === "approved" ? <BadgeCheck aria-hidden="true" className="size-3.5" /> : <RotateCcw aria-hidden="true" className="size-3.5" />}
+                  {review.decision === "approved" ? "Review approved" : "Changes requested"}
+                </p>
+                <p className="mt-0.5 text-text-muted">{review.by ?? "Former employee"} · {formatProjectDate(review.at)}</p>
+                {review.reason && <p className="mt-1.5 break-words text-text-secondary">“{review.reason}”</p>}
+              </div>
+            )}
+          </section>
+
+          <section className={cn(card, "space-y-3 p-5")} aria-labelledby="wi-sprint-heading">
+            <h2 id="wi-sprint-heading" className="text-sm font-semibold text-text-secondary">Sprint</h2>
+            {sprint ? (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Link href={`/projects/${project.id}/sprints/${sprint.id}`} className="min-w-0 truncate text-sm font-medium hover:text-primary">{sprint.name}</Link>
+                  <SprintStatusBadge status={sprint.status} />
+                </div>
+                {sprint.status !== "PLANNING" && (
+                  <Link href={`/projects/${project.id}/sprints/${sprint.id}/board`} className={cn(secondaryButton, "h-8 w-full px-2.5 text-xs")}>
+                    <KanbanSquare aria-hidden="true" className="size-3.5" />{sprint.status === "ACTIVE" ? "Open sprint board" : "View sprint board"}
+                  </Link>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-text-muted">{item.type === "EPIC" || item.type === "SUBTASK" ? "Not scheduled directly." : "Not in a sprint (backlog)."}</p>
+            )}
           </section>
 
           <section className={cn(card, "space-y-4 p-5")} aria-labelledby="wi-details-heading">
