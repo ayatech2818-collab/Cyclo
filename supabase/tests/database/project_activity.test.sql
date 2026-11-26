@@ -83,7 +83,7 @@ reset role; select pg_temp.stamp(6); -- add + remove share a timestamp
 -- -----------------------------------------------------------------------------
 -- Privileges
 -- -----------------------------------------------------------------------------
-select ok(not has_function_privilege('anon', 'public.list_project_activity(uuid,timestamptz,uuid,integer)', 'execute'), 'anon cannot read activity');
+select ok(not has_function_privilege('anon', 'public.list_project_activity(uuid,timestamptz,uuid,integer,uuid)', 'execute'), 'anon cannot read activity');
 select ok(not has_table_privilege('authenticated', 'private.project_audit_log', 'select'), 'employees have no SELECT on the audit table');
 select ok(not has_table_privilege('service_role', 'private.project_audit_log', 'select'), 'service_role has no SELECT on the audit table');
 select ok(not has_table_privilege('cyclo_project_api', 'private.project_audit_log', 'update'), 'RPC owner cannot change audit rows');

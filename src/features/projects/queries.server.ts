@@ -116,11 +116,12 @@ export async function searchAssignableDevelopers(projectId: string, search: unkn
  * through the existing avatar RPC, which only signs photos the caller may see;
  * otherwise the emoji/icon choice or initials are shown.
  */
-export async function listProjectActivity(projectId: string, cursor: ActivityCursor | null = null): Promise<ActivityPage> {
+export async function listProjectActivity(projectId: string, cursor: ActivityCursor | null = null, workItemId: string | null = null): Promise<ActivityPage> {
   await requireActiveProfile();
-  if (!isUuid(projectId)) throw new ProjectError("not_found");
+  if (!isUuid(projectId) || (workItemId !== null && !isUuid(workItemId))) throw new ProjectError("not_found");
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("list_project_activity", {
+    p_work_item_id: workItemId ?? undefined,
     p_project_id: projectId,
     p_before_created_at: cursor?.createdAt,
     p_before_id: cursor?.id,

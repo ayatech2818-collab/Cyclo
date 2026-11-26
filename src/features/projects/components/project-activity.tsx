@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useSyncExternalStore, useTransition } from "react";
-import { Archive, ArchiveRestore, ArrowRight, FolderPlus, History, Loader2, Pencil, UserCog, UserMinus, UserPlus, type LucideIcon } from "lucide-react";
+import Link from "next/link";
+import { Archive, ArchiveRestore, ArrowRight, CircleDot, FilePlus2, FolderPlus, GitBranch, Flag, History, Loader2, Pencil, Shapes, UserCheck, UserCog, UserMinus, UserPlus, type LucideIcon } from "lucide-react";
 
 import { EmployeeAvatar } from "@/features/employees/components/employee-avatar";
 import { cn } from "@/lib/utils/cn";
@@ -31,6 +32,15 @@ const ICONS: Record<ActivityAction, LucideIcon> = {
   PROJECT_RESTORED: ArchiveRestore,
   PROJECT_MEMBER_ADDED: UserPlus,
   PROJECT_MEMBER_REMOVED: UserMinus,
+  WORK_ITEM_CREATED: FilePlus2,
+  WORK_ITEM_UPDATED: Pencil,
+  WORK_ITEM_TYPE_CHANGED: Shapes,
+  WORK_ITEM_PARENT_CHANGED: GitBranch,
+  WORK_ITEM_ASSIGNED: UserCheck,
+  WORK_ITEM_PRIORITY_CHANGED: Flag,
+  WORK_ITEM_STATUS_CHANGED: CircleDot,
+  WORK_ITEM_ARCHIVED: Archive,
+  WORK_ITEM_RESTORED: ArchiveRestore,
 };
 
 const TONE_CLASSES: Record<ActivityTone, string> = {
@@ -61,7 +71,14 @@ function useViewerClock() {
   return { now, timeZone: now ? undefined : "UTC" };
 }
 
-function ActivityItem({ entry, now, timeZone, last }: { entry: ActivityEntry; now: Date | null; timeZone: string | undefined; last: boolean }) {
+function ActivityItem({ entry, now, timeZone, last, projectId, showWorkItem }: {
+  entry: ActivityEntry;
+  now: Date | null;
+  timeZone: string | undefined;
+  last: boolean;
+  projectId: string;
+  showWorkItem: boolean;
+}) {
   const Icon = ICONS[entry.action];
   const details = activityDetails(entry);
   const relative = now ? relativeTime(entry.createdAt, now) : null;
@@ -92,6 +109,16 @@ function ActivityItem({ entry, now, timeZone, last }: { entry: ActivityEntry; no
           </time>
         </div>
 
+        {showWorkItem && entry.workItem && (
+          <Link
+            href={`/projects/${projectId}/work/${entry.workItem.id}`}
+            className="mt-1.5 inline-flex max-w-full items-center gap-2 rounded-md px-1 text-sm hover:bg-surface-muted"
+          >
+            <span className="font-mono text-xs text-text-muted">{entry.workItem.issueKey}</span>
+            <span className="truncate font-medium text-text-primary">{entry.workItem.title}</span>
+          </Link>
+        )}
+
         {details.length > 0 && (
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {details.map((detail) => (
@@ -113,10 +140,13 @@ function ActivityItem({ entry, now, timeZone, last }: { entry: ActivityEntry; no
   );
 }
 
-export function ActivityFeed({ projectId, initialEntries, initialCursor }: {
+export function ActivityFeed({ projectId, workItemId = null, initialEntries, initialCursor, emptyText }: {
   projectId: string;
+  /** When set, the feed shows (and pages through) one work item's history. */
+  workItemId?: string | null;
   initialEntries: ActivityEntry[];
   initialCursor: ActivityCursor | null;
+  emptyText?: string;
 }) {
   const [entries, setEntries] = useState(initialEntries);
   const [cursor, setCursor] = useState(initialCursor);
@@ -128,7 +158,7 @@ export function ActivityFeed({ projectId, initialEntries, initialCursor }: {
     if (!cursor) return;
     setError(null);
     startTransition(async () => {
-      const result = await loadMoreActivityAction(projectId, cursor);
+      const result = await loadMoreActivityAction(projectId, cursor, workItemId);
       if (!result.page) {
         setError(result.error);
         return;
@@ -150,7 +180,7 @@ export function ActivityFeed({ projectId, initialEntries, initialCursor }: {
           <History aria-hidden="true" className="size-6" />
         </span>
         <p className="text-base font-semibold">No activity yet</p>
-        <p className="mt-1 max-w-sm text-sm text-text-secondary">Changes to this project and its team will appear here.</p>
+        <p className="mt-1 max-w-sm text-sm text-text-secondary">{emptyText ?? "Changes to this project, its team and its work will appear here."}</p>
       </div>
     );
   }
@@ -174,6 +204,8 @@ export function ActivityFeed({ projectId, initialEntries, initialCursor }: {
                   now={now}
                   timeZone={timeZone}
                   last={index === group.entries.length - 1}
+                  projectId={projectId}
+                  showWorkItem={!workItemId}
                 />
               ))}
             </ol>

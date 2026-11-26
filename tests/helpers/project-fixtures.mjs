@@ -51,7 +51,16 @@ export function createFixtures(prefix) {
     const ids = Object.values(users).map(({ id }) => id).filter((id) => /^[0-9a-f-]{36}$/.test(id));
     if (ids.length) {
       const list = ids.map((id) => `'${id}'`).join(",");
+      // Work items: leaf types first (parent links are ON DELETE RESTRICT).
+      const items = `project_id in (select id from public.projects where project_manager_id in (${list}) or created_by in (${list}))`;
       const result = localSql(`begin;
+        alter table public.work_items disable trigger work_items_prevent_delete;
+        delete from public.work_items where ${items} and type = 'SUBTASK';
+        delete from public.work_items where ${items} and type = 'BUG';
+        delete from public.work_items where ${items} and type = 'TASK';
+        delete from public.work_items where ${items} and type = 'STORY';
+        delete from public.work_items where ${items} and type = 'EPIC';
+        alter table public.work_items enable trigger work_items_prevent_delete;
         alter table public.projects disable trigger projects_prevent_delete;
         delete from public.projects where project_manager_id in (${list}) or created_by in (${list});
         alter table public.projects enable trigger projects_prevent_delete;
