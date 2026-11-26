@@ -31,6 +31,32 @@ export type ProjectErrorCode =
   | "work_item_archived"
   | "parent_archived"
   | "has_active_children"
+  // Backlog (Phase 8E)
+  | "invalid_position"
+  | "invalid_selection"
+  | "invalid_bulk_change"
+  // Sprints (Phase 8F1)
+  | "invalid_sprint_name"
+  | "invalid_sprint_goal"
+  | "invalid_sprint_dates"
+  | "invalid_capacity"
+  | "invalid_sprint_transition"
+  | "sprint_closed"
+  | "sprint_started"
+  | "sprint_empty"
+  | "active_sprint_exists"
+  | "already_in_sprint"
+  | "in_another_sprint"
+  | "not_in_sprint"
+  | "not_schedulable"
+  | "unfinished_work_requires_decision"
+  | "invalid_carry_over_sprint"
+  // Execution (Phase 8F2)
+  | "reason_required"
+  | "status_changed"
+  | "blocked_reason_required"
+  | "review_reason_required"
+  | "invalid_action"
   | "unavailable"
   | "unexpected";
 
@@ -60,6 +86,29 @@ export const PROJECT_ERROR_MESSAGES: Record<ProjectErrorCode, string> = {
   work_item_archived: "Archived work items are read-only. Restore it to make changes.",
   parent_archived: "The parent work item is archived.",
   has_active_children: "Archive or move this item's children first.",
+  invalid_position: "That position is no longer available. Reload the backlog and try again.",
+  invalid_selection: "Some selected items are no longer in this backlog. Reload and try again.",
+  invalid_bulk_change: "Choose a priority or an assignee to apply.",
+  invalid_sprint_name: "Enter a sprint name of up to 80 characters.",
+  invalid_sprint_goal: "Keep the sprint goal under 2,000 characters.",
+  invalid_sprint_dates: "Set a start date that is before the end date.",
+  invalid_capacity: "Use a capacity between 0 and 10,000 points, with at most one decimal.",
+  invalid_sprint_transition: "This sprint cannot make that change in its current state.",
+  sprint_closed: "Completed and cancelled sprints cannot be changed.",
+  sprint_started: "The start date of an active sprint cannot change.",
+  sprint_empty: "Add at least one work item before starting the sprint.",
+  active_sprint_exists: "Another sprint is already active in this project. Complete it first.",
+  already_in_sprint: "Some items are already in this sprint.",
+  in_another_sprint: "Some items are already in another sprint. Move them from that sprint instead.",
+  not_in_sprint: "Some items are no longer in this sprint. Reload and try again.",
+  not_schedulable: "Only open stories, tasks and bugs (not archived) can be planned in a sprint.",
+  unfinished_work_requires_decision: "Choose where the unfinished work should go.",
+  invalid_carry_over_sprint: "Choose a planned sprint of this project for the unfinished work.",
+  reason_required: "Add a short reason (3–500 characters).",
+  status_changed: "Someone changed this item in the meantime. Its latest status has been loaded.",
+  blocked_reason_required: "Use “Mark blocked” and add a reason.",
+  review_reason_required: "Use “Request changes” and add a reason.",
+  invalid_action: "That action is not available.",
   unavailable: "Project data is temporarily unavailable. Please try again.",
   unexpected: "Something went wrong. Please try again.",
 };
@@ -92,9 +141,16 @@ const VALIDATION_MESSAGES = new Set<ProjectErrorCode>([
   "invalid_name", "invalid_project_key", "invalid_description", "invalid_priority",
   "invalid_status", "invalid_date_range", "invalid_project_manager",
   "invalid_type", "invalid_title", "invalid_parent", "invalid_assignee", "invalid_estimate", "invalid_transition",
+  "invalid_position", "invalid_selection", "invalid_bulk_change",
+  "invalid_sprint_name", "invalid_sprint_goal", "invalid_sprint_dates", "invalid_capacity", "invalid_sprint_transition",
+  "in_another_sprint", "not_in_sprint", "not_schedulable", "unfinished_work_requires_decision", "invalid_carry_over_sprint",
+  "reason_required", "blocked_reason_required", "review_reason_required", "invalid_action",
 ]);
 
-const STATE_MESSAGES = new Set<ProjectErrorCode>(["project_archived", "work_item_archived", "parent_archived", "has_active_children"]);
+const STATE_MESSAGES = new Set<ProjectErrorCode>([
+  "project_archived", "work_item_archived", "parent_archived", "has_active_children", "sprint_closed", "sprint_started",
+  "status_changed",
+]);
 
 const MISSING_FUNCTION_CODES = new Set(["PGRST202", "42883"]);
 
@@ -117,11 +173,13 @@ export function mapProjectDatabaseError(error: DatabaseErrorLike | null | undefi
     case "P0002":
       return message === "member_not_found" ? "member_not_found" : "not_found";
     case "23505":
-      return message === "duplicate_member" ? "duplicate_member" : "duplicate_project_key";
+      if (message === "duplicate_member" || message === "active_sprint_exists" || message === "already_in_sprint") return message;
+      return "duplicate_project_key";
     case "55000":
       return STATE_MESSAGES.has(message as ProjectErrorCode) ? (message as ProjectErrorCode) : "unexpected";
     case "22023":
       if (message === "invalid_member") return "invalid_member";
+      if (message === "sprint_empty") return "sprint_empty";
       return VALIDATION_MESSAGES.has(message as ProjectErrorCode) ? (message as ProjectErrorCode) : "invalid_input";
     case "23514":
       if (message === "invalid_project_manager") return "invalid_project_manager";

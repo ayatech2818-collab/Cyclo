@@ -39,7 +39,13 @@ test("workflow transitions mirror private.work_item_transitions", () => {
   const rows = [...block.slice(0, block.indexOf(";")).matchAll(/\('([A-Z_]+)',\s*'([A-Z_]+)',\s*(true|false)\)/g)]
     .map(([, from, to, managerOnly]) => ({ from, to, managerOnly: managerOnly === "true" }));
   assert.equal(rows.length, 20);
-  assert.deepEqual(rows, types.WORK_ITEM_TRANSITIONS);
+  // Phase 8F2 makes review decisions manager-only.
+  const execution = readFileSync(new URL("../supabase/migrations/20261201100000_sprint_execution.sql", import.meta.url), "utf8");
+  const tightened = execution.slice(execution.indexOf("update private.work_item_transitions"));
+  const pairs = [...tightened.slice(0, tightened.indexOf(";")).matchAll(/\('([A-Z_]+)', '([A-Z_]+)'\)/g)].map(([, from, to]) => `${from}>${to}`);
+  assert.deepEqual(pairs, ["IN_REVIEW>DONE", "IN_REVIEW>IN_PROGRESS"]);
+  const current = rows.map((row) => (pairs.includes(`${row.from}>${row.to}`) ? { ...row, managerOnly: true } : row));
+  assert.deepEqual(current, types.WORK_ITEM_TRANSITIONS);
 });
 
 test("hierarchy rules mirror private.work_item_parent_allowed", () => {
@@ -69,7 +75,8 @@ test("sorts and enums mirror the database", () => {
 test("next statuses depend on the current status, blocked origin and role", () => {
   assert.deepEqual(nextStatuses("BACKLOG", null, false), ["TODO"]);
   assert.deepEqual(nextStatuses("BACKLOG", null, true), ["TODO", "CANCELLED"]);
-  assert.deepEqual(nextStatuses("IN_REVIEW", null, false), ["IN_PROGRESS", "DONE", "BLOCKED"]);
+  assert.deepEqual(nextStatuses("IN_REVIEW", null, false), ["BLOCKED"], "review decisions are manager-only (8F2)");
+  assert.deepEqual(nextStatuses("IN_REVIEW", null, true), ["IN_PROGRESS", "DONE", "BLOCKED", "CANCELLED"]);
   assert.deepEqual(nextStatuses("BLOCKED", "IN_REVIEW", false), ["IN_REVIEW"], "blocked returns only to its origin");
   assert.deepEqual(nextStatuses("BLOCKED", "TODO", true), ["TODO", "CANCELLED"]);
   assert.deepEqual(nextStatuses("DONE", null, false), [], "only managers reopen");

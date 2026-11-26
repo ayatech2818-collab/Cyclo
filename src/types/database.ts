@@ -86,16 +86,42 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"work_items": {
+                },"sprints": {
                   Row: {
-                    "archived_at": string | null,"assignee_id": string | null,"blocked_from_status": Database["public"]['Enums']["work_item_status"] | null,"completed_at": string | null,"created_at": string,"description": string | null,"due_date": string | null,"estimate": number | null,"id": string,"issue_key": string,"issue_number": number,"parent_id": string | null,"priority": Database["public"]['Enums']["project_priority"],"project_id": string,"reporter_id": string,"start_date": string | null,"status": Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"],"updated_at": string
+                    "cancelled_at": string | null,"capacity_points": number | null,"completed_at": string | null,"created_at": string,"created_by": string,"end_date": string | null,"goal": string | null,"id": string,"name": string,"project_id": string,"start_date": string | null,"started_at": string | null,"status": Database["public"]['Enums']["sprint_status"],"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "archived_at"?: string | null,"assignee_id"?: string | null,"blocked_from_status"?: Database["public"]['Enums']["work_item_status"] | null,"completed_at"?: string | null,"created_at"?: string,"description"?: string | null,"due_date"?: string | null,"estimate"?: number | null,"id"?: string,"issue_key": string,"issue_number": number,"parent_id"?: string | null,"priority"?: Database["public"]['Enums']["project_priority"],"project_id": string,"reporter_id": string,"start_date"?: string | null,"status"?: Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"],"updated_at"?: string
+                    "cancelled_at"?: string | null,"capacity_points"?: number | null,"completed_at"?: string | null,"created_at"?: string,"created_by": string,"end_date"?: string | null,"goal"?: string | null,"id"?: string,"name": string,"project_id": string,"start_date"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["sprint_status"],"updated_at"?: string
                   }
                   Update: {
-                    "archived_at"?: string | null,"assignee_id"?: string | null,"blocked_from_status"?: Database["public"]['Enums']["work_item_status"] | null,"completed_at"?: string | null,"created_at"?: string,"description"?: string | null,"due_date"?: string | null,"estimate"?: number | null,"id"?: string,"issue_key"?: string,"issue_number"?: number,"parent_id"?: string | null,"priority"?: Database["public"]['Enums']["project_priority"],"project_id"?: string,"reporter_id"?: string,"start_date"?: string | null,"status"?: Database["public"]['Enums']["work_item_status"],"title"?: string,"type"?: Database["public"]['Enums']["work_item_type"],"updated_at"?: string
+                    "cancelled_at"?: string | null,"capacity_points"?: number | null,"completed_at"?: string | null,"created_at"?: string,"created_by"?: string,"end_date"?: string | null,"goal"?: string | null,"id"?: string,"name"?: string,"project_id"?: string,"start_date"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["sprint_status"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "sprints_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sprints_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"work_items": {
+                  Row: {
+                    "archived_at": string | null,"assignee_id": string | null,"backlog_rank": number,"blocked_from_status": Database["public"]['Enums']["work_item_status"] | null,"blocked_reason": string | null,"completed_at": string | null,"created_at": string,"description": string | null,"due_date": string | null,"estimate": number | null,"id": string,"issue_key": string,"issue_number": number,"parent_id": string | null,"priority": Database["public"]['Enums']["project_priority"],"project_id": string,"reporter_id": string,"sprint_id": string | null,"start_date": string | null,"status": Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"assignee_id"?: string | null,"backlog_rank": number,"blocked_from_status"?: Database["public"]['Enums']["work_item_status"] | null,"blocked_reason"?: string | null,"completed_at"?: string | null,"created_at"?: string,"description"?: string | null,"due_date"?: string | null,"estimate"?: number | null,"id"?: string,"issue_key": string,"issue_number": number,"parent_id"?: string | null,"priority"?: Database["public"]['Enums']["project_priority"],"project_id": string,"reporter_id": string,"sprint_id"?: string | null,"start_date"?: string | null,"status"?: Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"],"updated_at"?: string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"assignee_id"?: string | null,"backlog_rank"?: number,"blocked_from_status"?: Database["public"]['Enums']["work_item_status"] | null,"blocked_reason"?: string | null,"completed_at"?: string | null,"created_at"?: string,"description"?: string | null,"due_date"?: string | null,"estimate"?: number | null,"id"?: string,"issue_key"?: string,"issue_number"?: number,"parent_id"?: string | null,"priority"?: Database["public"]['Enums']["project_priority"],"project_id"?: string,"reporter_id"?: string,"sprint_id"?: string | null,"start_date"?: string | null,"status"?: Database["public"]['Enums']["work_item_status"],"title"?: string,"type"?: Database["public"]['Enums']["work_item_type"],"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -122,6 +148,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "work_items_sprint_same_project_fkey"
+      columns: ["project_id","sprint_id"]
+isOneToOne: false
+      referencedRelation: "sprints"
+      referencedColumns: ["project_id","id"]
     }
                   ]
                 }
@@ -137,6 +169,9 @@ isOneToOne: false
                            },
 "add_project_member":
 { Args: { "p_profile_id": string,"p_project_id": string }; Returns: string
+                           },
+"add_work_items_to_sprint":
+{ Args: { "p_sprint_id": string,"p_work_item_ids": (string)[] }; Returns: number
                            },
 "admin_create_employee_invitation":
 { Args: { "p_email": string,"p_full_name": string,"p_role": Database["public"]['Enums']["app_role"] }; Returns: {
@@ -205,6 +240,17 @@ isOneToOne: false
 "assign_work_item":
 { Args: { "p_assignee_id"?: string,"p_work_item_id": string }; Returns: string
                            },
+"backlog_summary":
+{ Args: { "p_project_id": string }; Returns: {
+              "dimension": string,"estimate_total": number,"item_count": number,"key": string,"label": string
+            }[]
+                           },
+"bulk_update_work_items":
+{ Args: { "p_assignee_id"?: string,"p_change_assignee"?: boolean,"p_change_priority"?: boolean,"p_priority"?: Database["public"]['Enums']["project_priority"],"p_project_id": string,"p_work_item_ids": (string)[] }; Returns: number
+                           },
+"cancel_sprint":
+{ Args: { "p_sprint_id": string }; Returns: number
+                           },
 "change_work_item_priority":
 { Args: { "p_priority": Database["public"]['Enums']["project_priority"],"p_work_item_id": string }; Returns: string
                            },
@@ -216,11 +262,22 @@ isOneToOne: false
               "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
             }[]
                            },
+"complete_sprint":
+{ Args: { "p_carry_over"?: string,"p_sprint_id": string,"p_target_sprint_id"?: string }; Returns: number
+                           },
 "create_project":
 { Args: { "p_description"?: string,"p_name": string,"p_priority": Database["public"]['Enums']["project_priority"],"p_project_key": string,"p_project_manager_id"?: string,"p_start_date"?: string,"p_target_date"?: string }; Returns: string
                            },
+"create_sprint":
+{ Args: { "p_capacity_points"?: number,"p_end_date"?: string,"p_goal"?: string,"p_name": string,"p_project_id": string,"p_start_date"?: string }; Returns: string
+                           },
 "create_work_item":
 { Args: { "p_assignee_id"?: string,"p_description"?: string,"p_due_date"?: string,"p_estimate"?: number,"p_parent_id"?: string,"p_priority"?: Database["public"]['Enums']["project_priority"],"p_project_id": string,"p_start_date"?: string,"p_status"?: Database["public"]['Enums']["work_item_status"],"p_title": string,"p_type": Database["public"]['Enums']["work_item_type"] }; Returns: string
+                           },
+"execute_work_item":
+{ Args: { "p_action": string,"p_expected_status": Database["public"]['Enums']["work_item_status"],"p_reason"?: string,"p_work_item_id": string }; Returns: {
+              "blocked_from_status": Database["public"]['Enums']["work_item_status"],"blocked_reason": string,"changed": boolean,"id": string,"status": Database["public"]['Enums']["work_item_status"],"updated_at": string
+            }[]
                            },
 "get_employee":
 { Args: { "p_employee_id": string }; Returns: {
@@ -247,6 +304,11 @@ isOneToOne: false
               "archived_at": string,"created_at": string,"created_by": string,"created_by_name": string,"description": string,"id": string,"name": string,"priority": Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_email": string,"project_manager_id": string,"project_manager_is_active": boolean,"project_manager_name": string,"start_date": string,"status": Database["public"]['Enums']["project_status"],"target_date": string,"updated_at": string
             }[]
                            },
+"get_sprint":
+{ Args: { "p_sprint_id": string }; Returns: {
+              "cancelled_at": string,"capacity_points": number,"completed_at": string,"created_at": string,"created_by_name": string,"done_count": number,"done_estimate": number,"end_date": string,"estimate_total": number,"goal": string,"id": string,"item_count": number,"name": string,"project_id": string,"start_date": string,"started_at": string,"status": Database["public"]['Enums']["sprint_status"],"unestimated_count": number
+            }[]
+                           },
 "get_work_item":
 { Args: { "p_work_item_id": string }; Returns: {
               "archived_at": string,"assignee_email": string,"assignee_id": string,"assignee_is_eligible": boolean,"assignee_name": string,"blocked_from_status": Database["public"]['Enums']["work_item_status"],"completed_at": string,"created_at": string,"description": string,"due_date": string,"estimate": number,"id": string,"issue_key": string,"issue_number": number,"parent_id": string,"parent_issue_key": string,"parent_title": string,"parent_type": Database["public"]['Enums']["work_item_type"],"priority": Database["public"]['Enums']["project_priority"],"project_id": string,"reporter_id": string,"reporter_name": string,"start_date": string,"status": Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"],"updated_at": string
@@ -257,6 +319,11 @@ isOneToOne: false
               "email": string,"full_name": string,"id": string
             }[]
                            },
+"list_backlog":
+{ Args: { "p_assignee_id"?: string,"p_epic_id"?: string,"p_group"?: string,"p_include_completed"?: boolean,"p_no_epic"?: boolean,"p_page"?: number,"p_page_size"?: number,"p_priority"?: Database["public"]['Enums']["project_priority"],"p_project_id": string,"p_search"?: string,"p_status"?: Database["public"]['Enums']["work_item_status"],"p_type"?: Database["public"]['Enums']["work_item_type"],"p_unassigned"?: boolean }; Returns: {
+              "assignee_id": string,"assignee_name": string,"backlog_rank": number,"epic_id": string,"epic_key": string,"epic_title": string,"estimate": number,"id": string,"issue_key": string,"priority": Database["public"]['Enums']["project_priority"],"status": Database["public"]['Enums']["work_item_status"],"subtask_count": number,"title": string,"total_count": number,"type": Database["public"]['Enums']["work_item_type"]
+            }[]
+                           },
 "list_employees":
 { Args: { "p_is_active"?: boolean,"p_page"?: number,"p_page_size"?: number,"p_role"?: Database["public"]['Enums']["app_role"],"p_search"?: string }; Returns: {
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"],"total_count": number
@@ -264,7 +331,7 @@ isOneToOne: false
                            },
 "list_project_activity":
 { Args: { "p_before_created_at"?: string,"p_before_id"?: string,"p_limit"?: number,"p_project_id": string,"p_work_item_id"?: string }; Returns: {
-              "action": string,"actor_avatar_kind": string,"actor_avatar_symbol": string,"actor_id": string,"actor_name": string,"changes": Json,"created_at": string,"id": string,"previous_subject_name": string,"subject_name": string,"work_item_id": string,"work_item_key": string,"work_item_title": string
+              "action": string,"actor_avatar_kind": string,"actor_avatar_symbol": string,"actor_id": string,"actor_name": string,"changes": Json,"created_at": string,"id": string,"previous_subject_name": string,"sprint_id": string,"sprint_name": string,"subject_name": string,"work_item_id": string,"work_item_key": string,"work_item_title": string
             }[]
                            },
 "list_project_manager_options":
@@ -282,6 +349,21 @@ isOneToOne: false
               "archived_at": string,"created_at": string,"description": string,"id": string,"name": string,"priority": Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_id": string,"project_manager_name": string,"start_date": string,"status": Database["public"]['Enums']["project_status"],"target_date": string,"total_count": number,"updated_at": string
             }[]
                            },
+"list_sprint_board":
+{ Args: { "p_sprint_id": string }; Returns: {
+              "assignee_id": string,"assignee_name": string,"backlog_rank": number,"blocked_from_status": Database["public"]['Enums']["work_item_status"],"blocked_reason": string,"estimate": number,"id": string,"issue_key": string,"priority": Database["public"]['Enums']["project_priority"],"status": Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"],"updated_at": string
+            }[]
+                           },
+"list_sprint_items":
+{ Args: { "p_page"?: number,"p_page_size"?: number,"p_sprint_id": string }; Returns: {
+              "archived_at": string,"assignee_id": string,"assignee_name": string,"estimate": number,"id": string,"issue_key": string,"priority": Database["public"]['Enums']["project_priority"],"status": Database["public"]['Enums']["work_item_status"],"title": string,"total_count": number,"type": Database["public"]['Enums']["work_item_type"]
+            }[]
+                           },
+"list_sprints":
+{ Args: { "p_page"?: number,"p_page_size"?: number,"p_project_id": string,"p_scope"?: string }; Returns: {
+              "cancelled_at": string,"capacity_points": number,"completed_at": string,"created_at": string,"done_count": number,"done_estimate": number,"end_date": string,"estimate_total": number,"goal": string,"id": string,"item_count": number,"name": string,"start_date": string,"started_at": string,"status": Database["public"]['Enums']["sprint_status"],"total_count": number,"unestimated_count": number
+            }[]
+                           },
 "list_work_item_children":
 { Args: { "p_work_item_id": string }; Returns: {
               "archived_at": string,"assignee_name": string,"id": string,"issue_key": string,"priority": Database["public"]['Enums']["project_priority"],"status": Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"]
@@ -297,6 +379,12 @@ isOneToOne: false
               "archived_at": string,"assignee_id": string,"assignee_name": string,"child_count": number,"created_at": string,"due_date": string,"estimate": number,"id": string,"issue_key": string,"issue_number": number,"parent_id": string,"parent_issue_key": string,"priority": Database["public"]['Enums']["project_priority"],"status": Database["public"]['Enums']["work_item_status"],"title": string,"total_count": number,"type": Database["public"]['Enums']["work_item_type"],"updated_at": string
             }[]
                            },
+"move_backlog_item":
+{ Args: { "p_after_id"?: string,"p_before_id"?: string,"p_work_item_id": string }; Returns: string
+                           },
+"move_work_items_between_sprints":
+{ Args: { "p_from_sprint_id": string,"p_to_sprint_id": string,"p_work_item_ids": (string)[] }; Returns: number
+                           },
 "remove_my_avatar_image":
 { Args: Record<PropertyKey, never>; Returns: {
               "avatar_kind": string,"avatar_path": string,"avatar_symbol": string,"previous_path": string
@@ -304,6 +392,9 @@ isOneToOne: false
                            },
 "remove_project_member":
 { Args: { "p_profile_id": string,"p_project_id": string }; Returns: string
+                           },
+"remove_work_items_from_sprint":
+{ Args: { "p_sprint_id": string,"p_work_item_ids": (string)[] }; Returns: number
                            },
 "restore_project":
 { Args: { "p_project_id": string }; Returns: string
@@ -321,13 +412,34 @@ isOneToOne: false
               "avatar_kind": string,"avatar_path": string,"avatar_symbol": string,"previous_path": string
             }[]
                            },
+"set_sprint_capacity":
+{ Args: { "p_capacity_points"?: number,"p_sprint_id": string }; Returns: string
+                           },
 "set_work_item_hierarchy":
 { Args: { "p_parent_id"?: string,"p_type": Database["public"]['Enums']["work_item_type"],"p_work_item_id": string }; Returns: string
+                           },
+"sprint_burndown":
+{ Args: { "p_sprint_id": string }; Returns: {
+              "completed_points": number,"day": string,"has_data": boolean,"remaining_items": number,"remaining_points": number,"scope_points": number,"unestimated_items": number
+            }[]
+                           },
+"sprint_capacity":
+{ Args: { "p_sprint_id": string }; Returns: {
+              "assignee_id": string,"assignee_name": string,"estimate_total": number,"item_count": number,"unestimated_count": number
+            }[]
+                           },
+"sprint_progress":
+{ Args: { "p_sprint_id": string }; Returns: {
+              "assignee_id": string,"assignee_name": string,"cancelled_items": number,"completed_items": number,"completed_points": number,"completion_percent": number,"remaining_items": number,"remaining_points": number,"scope": string,"total_items": number,"total_points": number,"unestimated_items": number
+            }[]
                            },
 "start_employee_onboarding":
 { Args: Record<PropertyKey, never>; Returns: {
               "accepted_at": string,"assigned_role": Database["public"]['Enums']["app_role"],"auth_user_id": string,"completed_at": string,"created_at": string,"delivery_failed": boolean,"email": string,"expires_at": string,"full_name": string,"id": string,"inviter_id": string,"last_sent_at": string,"status": string
             }[]
+                           },
+"start_sprint":
+{ Args: { "p_sprint_id": string }; Returns: string
                            },
 "update_my_profile":
 { Args: { "p_full_name": string }; Returns: {
@@ -337,12 +449,20 @@ isOneToOne: false
 "update_project":
 { Args: { "p_description"?: string,"p_name": string,"p_priority": Database["public"]['Enums']["project_priority"],"p_project_id": string,"p_start_date"?: string,"p_status": Database["public"]['Enums']["project_status"],"p_target_date"?: string }; Returns: string
                            },
+"update_sprint":
+{ Args: { "p_end_date"?: string,"p_goal"?: string,"p_name": string,"p_sprint_id": string,"p_start_date"?: string }; Returns: string
+                           },
 "update_work_item":
 { Args: { "p_description"?: string,"p_due_date"?: string,"p_estimate"?: number,"p_start_date"?: string,"p_title": string,"p_work_item_id": string }; Returns: string
+                           },
+"work_item_execution":
+{ Args: { "p_work_item_id": string }; Returns: {
+              "blocked_reason": string,"last_review_action": string,"last_review_at": string,"last_review_by": string,"last_review_reason": string,"sprint_id": string,"sprint_name": string,"sprint_status": Database["public"]['Enums']["sprint_status"]
+            }[]
                            }
           }
           Enums: {
-            "app_role": "SUPER_ADMIN"|"PROJECT_MANAGER"|"DEVELOPER","project_priority": "low"|"medium"|"high"|"critical","project_status": "planning"|"active"|"on_hold"|"completed"|"cancelled","work_item_status": "BACKLOG"|"TODO"|"IN_PROGRESS"|"IN_REVIEW"|"BLOCKED"|"DONE"|"CANCELLED","work_item_type": "EPIC"|"STORY"|"TASK"|"SUBTASK"|"BUG"
+            "app_role": "SUPER_ADMIN"|"PROJECT_MANAGER"|"DEVELOPER","project_priority": "low"|"medium"|"high"|"critical","project_status": "planning"|"active"|"on_hold"|"completed"|"cancelled","sprint_status": "PLANNING"|"ACTIVE"|"COMPLETED"|"CANCELLED","work_item_status": "BACKLOG"|"TODO"|"IN_PROGRESS"|"IN_REVIEW"|"BLOCKED"|"DONE"|"CANCELLED","work_item_type": "EPIC"|"STORY"|"TASK"|"SUBTASK"|"BUG"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -458,7 +578,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "app_role": ["SUPER_ADMIN", "PROJECT_MANAGER", "DEVELOPER"],"project_priority": ["low", "medium", "high", "critical"],"project_status": ["planning", "active", "on_hold", "completed", "cancelled"],"work_item_status": ["BACKLOG", "TODO", "IN_PROGRESS", "IN_REVIEW", "BLOCKED", "DONE", "CANCELLED"],"work_item_type": ["EPIC", "STORY", "TASK", "SUBTASK", "BUG"]
+            "app_role": ["SUPER_ADMIN", "PROJECT_MANAGER", "DEVELOPER"],"project_priority": ["low", "medium", "high", "critical"],"project_status": ["planning", "active", "on_hold", "completed", "cancelled"],"sprint_status": ["PLANNING", "ACTIVE", "COMPLETED", "CANCELLED"],"work_item_status": ["BACKLOG", "TODO", "IN_PROGRESS", "IN_REVIEW", "BLOCKED", "DONE", "CANCELLED"],"work_item_type": ["EPIC", "STORY", "TASK", "SUBTASK", "BUG"]
           }
         }
 } as const
