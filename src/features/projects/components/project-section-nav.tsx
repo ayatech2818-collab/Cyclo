@@ -2,16 +2,16 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils/cn";
 
-export type ProjectSection = "overview" | "team" | "activity";
+export type ProjectSection = "overview" | "team" | "work" | "activity";
 
 /**
- * Project sections. Overview (8A), Team (8B) and Activity (8C) exist; the others are shown
+ * Project sections. Overview (8A), Team (8B), Activity (8C) and Work (8D) exist; Sprints is shown
  * as unavailable (not links) so no empty or fake pages are reachable.
  */
 const SECTIONS = [
   { id: "overview", label: "Overview", path: "" },
   { id: "team", label: "Team", path: "/team" },
-  { id: "work", label: "Work", path: null },
+  { id: "work", label: "Work", path: "/work" },
   { id: "sprints", label: "Sprints", path: null },
   { id: "activity", label: "Activity", path: "/activity" },
 ] as const;

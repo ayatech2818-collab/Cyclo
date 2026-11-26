@@ -34,7 +34,7 @@ export default async function ProjectActivityPage({ params }: { params: Promise<
       <section className={cn(card, "mx-auto max-w-3xl overflow-hidden")} aria-labelledby="project-activity">
         <div className="border-b border-border px-5 py-4 sm:px-6">
           <h2 id="project-activity" className="text-base font-semibold">Activity</h2>
-          <p className="mt-0.5 text-sm text-text-secondary">Changes to this project and its team, newest first.</p>
+          <p className="mt-0.5 text-sm text-text-secondary">Changes to this project, its team and its work, newest first.</p>
         </div>
         <ActivityFeed projectId={project.id} initialEntries={activity.entries} initialCursor={activity.nextCursor} />
       </section>

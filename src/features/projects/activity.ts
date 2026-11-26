@@ -2,13 +2,15 @@ import type { ResolvedAvatar } from "@/features/profile/avatar";
 
 // Relative imports keep this module loadable by the plain-Node unit tests.
 import { isEmojiAvatarId, isIconAvatarId } from "../profile/avatar-catalog";
+import { TYPE_LABELS, WORK_STATUS_LABELS } from "../work-items/types";
+import { isWorkItemStatus, isWorkItemType } from "../work-items/validation";
 import { ProjectError } from "./errors";
 import { formatProjectDate } from "./format";
 import { PRIORITY_LABELS, STATUS_LABELS } from "./types";
 import { isProjectPriority, isProjectStatus, isUuid } from "./validation";
 
 /*
- * Project activity feed (Phase 8C): row parsing, human-readable wording and
+ * Project activity feed (Phases 8C/8D): row parsing, human-readable wording and
  * date grouping. Pure and framework-free. The database returns only
  * allow-listed, display-safe fields (see list_project_activity).
  */
@@ -21,10 +23,21 @@ export const ACTIVITY_ACTIONS = [
   "PROJECT_RESTORED",
   "PROJECT_MEMBER_ADDED",
   "PROJECT_MEMBER_REMOVED",
+  "WORK_ITEM_CREATED",
+  "WORK_ITEM_UPDATED",
+  "WORK_ITEM_TYPE_CHANGED",
+  "WORK_ITEM_PARENT_CHANGED",
+  "WORK_ITEM_ASSIGNED",
+  "WORK_ITEM_PRIORITY_CHANGED",
+  "WORK_ITEM_STATUS_CHANGED",
+  "WORK_ITEM_ARCHIVED",
+  "WORK_ITEM_RESTORED",
 ] as const;
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_FIELDS = ["name", "project_key", "status", "priority", "start_date", "target_date", "description"] as const;
+export const ACTIVITY_FIELDS = [
+  "name", "project_key", "title", "type", "status", "priority", "start_date", "target_date", "due_date", "estimate", "description",
+] as const;
 export type ActivityField = (typeof ACTIVITY_FIELDS)[number];
 
 export type ActivityChange = { field: ActivityField; from: string | null; to: string | null };
@@ -42,6 +55,8 @@ export type ActivityEntry = {
   subjectName: string | null;
   previousSubjectName: string | null;
   changes: ActivityChange[];
+  /** Set for WORK_ITEM_* events. */
+  workItem: { id: string; issueKey: string; title: string } | null;
 };
 
 export type ActivityPage = { entries: ActivityEntry[]; nextCursor: ActivityCursor | null };
@@ -118,7 +133,17 @@ export function toActivityEntry(value: unknown, avatars: ReadonlyMap<string, Res
     subjectName: optionalStr(row, "subject_name"),
     previousSubjectName: optionalStr(row, "previous_subject_name"),
     changes: parseChanges(row.changes),
+    workItem: parseWorkItem(row),
   };
+}
+
+function parseWorkItem(row: Row): ActivityEntry["workItem"] {
+  const id = optionalStr(row, "work_item_id");
+  if (!id) return null;
+  if (!isUuid(id)) throw new ProjectError("unexpected");
+  const issueKey = optionalStr(row, "work_item_key");
+  const title = optionalStr(row, "work_item_title");
+  return issueKey && title ? { id, issueKey, title } : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -132,14 +157,20 @@ export const FIELD_LABELS: Record<ActivityField, string> = {
   priority: "Priority",
   start_date: "Start date",
   target_date: "Target date",
+  title: "Title",
+  type: "Type",
+  due_date: "Due date",
+  estimate: "Estimate",
   description: "Description",
 };
 
 function displayValue(field: ActivityField, value: string | null): string {
   if (value === null || value === "") return "Not set";
   if (field === "status" && isProjectStatus(value)) return STATUS_LABELS[value];
+  if (field === "status" && isWorkItemStatus(value)) return WORK_STATUS_LABELS[value];
+  if (field === "type" && isWorkItemType(value)) return TYPE_LABELS[value];
   if (field === "priority" && isProjectPriority(value)) return PRIORITY_LABELS[value];
-  if (field === "start_date" || field === "target_date") return formatProjectDate(value) ?? value;
+  if (field === "start_date" || field === "target_date" || field === "due_date") return formatProjectDate(value) ?? value;
   return value;
 }
 
@@ -150,7 +181,19 @@ const SINGLE_FIELD_PHRASES: Record<ActivityField, string> = {
   priority: "changed the priority",
   start_date: "changed the start date",
   target_date: "changed the target date",
+  title: "renamed",
+  type: "changed the type of",
+  due_date: "changed the due date of",
+  estimate: "changed the estimate of",
   description: "updated the project description",
+};
+
+const WORK_FIELD_PHRASES: Partial<Record<ActivityField, string>> = {
+  title: "renamed",
+  description: "updated the description of",
+  start_date: "changed the start date of",
+  due_date: "changed the due date of",
+  estimate: "changed the estimate of",
 };
 
 export function actorLabel(entry: Pick<ActivityEntry, "actorName">): string {
@@ -158,8 +201,9 @@ export function actorLabel(entry: Pick<ActivityEntry, "actorName">): string {
 }
 
 /** The predicate after the actor's name, e.g. "added Dev Kumar to the team". */
-export function describeActivity(entry: Pick<ActivityEntry, "action" | "subjectName" | "previousSubjectName" | "changes">): string {
+export function describeActivity(entry: Pick<ActivityEntry, "action" | "subjectName" | "previousSubjectName" | "changes" | "workItem">): string {
   const subject = entry.subjectName?.trim() || "a former employee";
+  const item = entry.workItem?.issueKey ?? "a work item";
   switch (entry.action) {
     case "PROJECT_CREATED":
       return "created the project";
@@ -177,6 +221,29 @@ export function describeActivity(entry: Pick<ActivityEntry, "action" | "subjectN
       return `added ${subject} to the team`;
     case "PROJECT_MEMBER_REMOVED":
       return `removed ${subject} from the team`;
+    case "WORK_ITEM_CREATED":
+      return `created ${item}`;
+    case "WORK_ITEM_UPDATED": {
+      const phrase = entry.changes.length === 1 ? WORK_FIELD_PHRASES[entry.changes[0].field] : undefined;
+      return phrase ? `${phrase} ${item}` : `updated ${item}`;
+    }
+    case "WORK_ITEM_TYPE_CHANGED":
+      return `changed the type of ${item}`;
+    case "WORK_ITEM_PARENT_CHANGED":
+      if (entry.subjectName && entry.previousSubjectName) return `moved ${item} from ${entry.previousSubjectName} to ${entry.subjectName}`;
+      if (entry.subjectName) return `moved ${item} under ${entry.subjectName}`;
+      return entry.previousSubjectName ? `removed ${item} from ${entry.previousSubjectName}` : `changed the parent of ${item}`;
+    case "WORK_ITEM_ASSIGNED":
+      // A null subject means "unassigned" (assignees are never deleted).
+      return entry.subjectName ? `assigned ${item} to ${entry.subjectName}` : `unassigned ${item}`;
+    case "WORK_ITEM_PRIORITY_CHANGED":
+      return `changed the priority of ${item}`;
+    case "WORK_ITEM_STATUS_CHANGED":
+      return `changed the status of ${item}`;
+    case "WORK_ITEM_ARCHIVED":
+      return `archived ${item}`;
+    case "WORK_ITEM_RESTORED":
+      return `restored ${item}`;
   }
 }
 
@@ -184,16 +251,17 @@ export type ActivityDetail = { label: string; from: string | null; to: string };
 
 /** Field-level details shown under an entry. Description text is never available. */
 export function activityDetails(entry: Pick<ActivityEntry, "action" | "changes">): ActivityDetail[] {
-  if (entry.action === "PROJECT_CREATED") {
+  if (entry.action === "PROJECT_CREATED" || entry.action === "WORK_ITEM_CREATED") {
+    // The name/title is already part of the sentence.
     return entry.changes
-      .filter((change) => change.field !== "name")
+      .filter((change) => change.field !== "name" && change.field !== "title")
       .map((change) => ({
         label: FIELD_LABELS[change.field],
         from: null,
         to: change.field === "description" ? "Added" : displayValue(change.field, change.to),
       }));
   }
-  if (entry.action === "PROJECT_UPDATED") {
+  if (entry.action === "PROJECT_UPDATED" || entry.action.startsWith("WORK_ITEM_")) {
     return entry.changes.map((change) =>
       change.field === "description"
         ? { label: FIELD_LABELS.description, from: null, to: "Updated" }
@@ -213,6 +281,15 @@ export const ACTIVITY_TONES: Record<ActivityAction, ActivityTone> = {
   PROJECT_RESTORED: "success",
   PROJECT_MEMBER_ADDED: "success",
   PROJECT_MEMBER_REMOVED: "danger",
+  WORK_ITEM_CREATED: "primary",
+  WORK_ITEM_UPDATED: "neutral",
+  WORK_ITEM_TYPE_CHANGED: "neutral",
+  WORK_ITEM_PARENT_CHANGED: "neutral",
+  WORK_ITEM_ASSIGNED: "accent",
+  WORK_ITEM_PRIORITY_CHANGED: "warning",
+  WORK_ITEM_STATUS_CHANGED: "success",
+  WORK_ITEM_ARCHIVED: "warning",
+  WORK_ITEM_RESTORED: "success",
 };
 
 // ---------------------------------------------------------------------------

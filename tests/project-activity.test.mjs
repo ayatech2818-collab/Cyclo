@@ -32,14 +32,16 @@ const entry = (overrides) => toActivityEntry(row(overrides));
 const migration = readFileSync(new URL("../supabase/migrations/20261127100000_project_activity_feed.sql", import.meta.url), "utf8");
 const projectsMigration = readFileSync(new URL("../supabase/migrations/20261125100000_projects_foundation.sql", import.meta.url), "utf8");
 const teamMigration = readFileSync(new URL("../supabase/migrations/20261126100000_project_team_members.sql", import.meta.url), "utf8");
+// Latest definition of the audit action CHECK constraint (Phase 8D adds work item events).
+const workMigration = readFileSync(new URL("../supabase/migrations/20261128100000_work_items_foundation.sql", import.meta.url), "utf8");
 
 test("the UI knows every audit event type the database records", () => {
-  // The latest definition of the audit action CHECK constraint (Phase 8B).
-  const check = teamMigration.slice(teamMigration.indexOf("add constraint project_audit_log_action_check"));
-  const recorded = [...check.slice(0, check.indexOf(";")).matchAll(/'(PROJECT_[A-Z_]+)'/g)].map((match) => match[1]);
-  assert.equal(recorded.length, 7);
+  const check = workMigration.slice(workMigration.indexOf("add constraint project_audit_log_action_check"));
+  const recorded = [...check.slice(0, check.indexOf(";")).matchAll(/'((?:PROJECT|WORK_ITEM)_[A-Z_]+)'/g)].map((match) => match[1]);
+  assert.equal(recorded.length, 16);
   for (const action of new Set(recorded)) assert.ok(ACTIVITY_ACTIONS.includes(action), action);
-  assert.equal(ACTIVITY_ACTIONS.length, 7);
+  assert.equal(ACTIVITY_ACTIONS.length, 16);
+  assert.ok(teamMigration.includes("PROJECT_MEMBER_REMOVED"));
 });
 
 test("every event type reads as a human sentence", () => {

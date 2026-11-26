@@ -143,10 +143,10 @@ export async function removeProjectMemberAction(projectId: string, profileId: st
 export type ActivityLoadResult = { page: ActivityPage | null; error: string | null };
 
 /** "Load more" for the activity feed. The cursor is untrusted input and validated here and in the database. */
-export async function loadMoreActivityAction(projectId: string, cursor: unknown): Promise<ActivityLoadResult> {
+export async function loadMoreActivityAction(projectId: string, cursor: unknown, workItemId: string | null = null): Promise<ActivityLoadResult> {
   if (!isActivityCursor(cursor)) return { page: null, error: "The activity list could not be continued. Reload the page." };
   try {
-    return { page: await listProjectActivity(projectId, cursor), error: null };
+    return { page: await listProjectActivity(projectId, cursor, workItemId), error: null };
   } catch (error) {
     if (!(error instanceof ProjectError)) throw error;
     return { page: null, error: error.message };
