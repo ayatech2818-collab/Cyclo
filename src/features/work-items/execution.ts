@@ -65,6 +65,12 @@ const EXECUTION_MOVES: Record<ExecutionAction, Omit<Move, "to">> = {
   reject: { action: "reject", label: "Request changes", needsReason: true, confirm: null, tone: "neutral" },
 };
 
+/** Review decisions as moves (Review Inbox, Phase 8G1). Approval asks for confirmation there. */
+export const REVIEW_MOVES = {
+  approve: { to: "DONE", ...EXECUTION_MOVES.approve, confirm: "Approve this work? It moves to Done." },
+  reject: { to: "IN_PROGRESS", ...EXECUTION_MOVES.reject },
+} as const satisfies Record<"approve" | "reject", Move>;
+
 const GENERIC_LABELS: Partial<Record<`${WorkItemStatus}>${WorkItemStatus}`, string>> = {
   "BACKLOG>TODO": "Mark ready",
   "TODO>BACKLOG": "Back to backlog",
