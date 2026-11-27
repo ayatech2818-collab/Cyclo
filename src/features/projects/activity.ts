@@ -42,6 +42,9 @@ export const ACTIVITY_ACTIONS = [
   "WORK_ITEM_REVIEW_REJECTED",
   "WORK_ITEM_BLOCKED",
   "WORK_ITEM_RESUMED",
+  "WORK_ITEM_COMMENT_ADDED",
+  "WORK_ITEM_COMMENT_EDITED",
+  "WORK_ITEM_COMMENT_DELETED",
   "SPRINT_CREATED",
   "SPRINT_UPDATED",
   "SPRINT_CAPACITY_CHANGED",
@@ -311,6 +314,13 @@ export function describeActivity(entry: Pick<ActivityEntry, "action" | "subjectN
       return `marked ${item} as blocked`;
     case "WORK_ITEM_RESUMED":
       return `resumed work on ${item}`;
+    // Comment text is never part of the audit; the discussion shows it.
+    case "WORK_ITEM_COMMENT_ADDED":
+      return `commented on ${item}`;
+    case "WORK_ITEM_COMMENT_EDITED":
+      return `edited a comment on ${item}`;
+    case "WORK_ITEM_COMMENT_DELETED":
+      return `deleted a comment on ${item}`;
     case "SPRINT_CREATED":
       return `created ${sprintName(entry)}`;
     case "SPRINT_UPDATED":
@@ -391,6 +401,9 @@ export const ACTIVITY_TONES: Record<ActivityAction, ActivityTone> = {
   WORK_ITEM_REVIEW_REJECTED: "warning",
   WORK_ITEM_BLOCKED: "danger",
   WORK_ITEM_RESUMED: "accent",
+  WORK_ITEM_COMMENT_ADDED: "primary",
+  WORK_ITEM_COMMENT_EDITED: "neutral",
+  WORK_ITEM_COMMENT_DELETED: "neutral",
   SPRINT_CREATED: "primary",
   SPRINT_UPDATED: "neutral",
   SPRINT_CAPACITY_CHANGED: "neutral",

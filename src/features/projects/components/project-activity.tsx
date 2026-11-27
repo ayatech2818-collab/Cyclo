@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
-import { BadgeCheck, OctagonAlert, Play, RotateCcw, SendHorizontal, StepForward, Archive, ArchiveRestore, ArrowRight, ArrowUpDown, CalendarCheck2, CalendarPlus, CalendarX2, Gauge, IterationCw, PlayCircle, Undo2, CircleDot, FilePlus2, FolderPlus, GitBranch, Flag, History, Loader2, Pencil, Shapes, UserCheck, UserCog, UserMinus, UserPlus, type LucideIcon } from "lucide-react";
+import { BadgeCheck, OctagonAlert, Play, RotateCcw, SendHorizontal, StepForward, Archive, ArchiveRestore, ArrowRight, ArrowUpDown, CalendarCheck2, CalendarPlus, CalendarX2, Gauge, IterationCw, PlayCircle, Undo2, CircleDot, FilePlus2, FolderPlus, GitBranch, Flag, History, Loader2, MessageSquare, MessageSquareX, Pencil, Shapes, UserCheck, UserCog, UserMinus, UserPlus, type LucideIcon } from "lucide-react";
 
 import { EmployeeAvatar } from "@/features/employees/components/employee-avatar";
 import { cn } from "@/lib/utils/cn";
@@ -51,6 +51,9 @@ const ICONS: Record<ActivityAction, LucideIcon> = {
   WORK_ITEM_REVIEW_REJECTED: RotateCcw,
   WORK_ITEM_BLOCKED: OctagonAlert,
   WORK_ITEM_RESUMED: StepForward,
+  WORK_ITEM_COMMENT_ADDED: MessageSquare,
+  WORK_ITEM_COMMENT_EDITED: MessageSquare,
+  WORK_ITEM_COMMENT_DELETED: MessageSquareX,
   SPRINT_CREATED: CalendarPlus,
   SPRINT_UPDATED: Pencil,
   SPRINT_CAPACITY_CHANGED: Gauge,
@@ -79,7 +82,7 @@ function subscribeToMinutes(onTick: () => void) {
 const currentMinute = () => Math.floor(Date.now() / 60_000);
 const serverMinute = () => null;
 
-function useViewerClock() {
+export function useViewerClock() {
   // null during server render and hydration, then the current minute.
   const minute = useSyncExternalStore(subscribeToMinutes, currentMinute, serverMinute);
   // End of the current minute, so entries from the last few seconds never look "in the future".

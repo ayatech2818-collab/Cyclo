@@ -57,6 +57,13 @@ export type ProjectErrorCode =
   | "blocked_reason_required"
   | "review_reason_required"
   | "invalid_action"
+  // Comments (Phase 8G2)
+  | "invalid_comment"
+  | "invalid_mention"
+  | "too_many_mentions"
+  | "invalid_parent_comment"
+  | "comment_not_found"
+  | "comment_deleted"
   | "unavailable"
   | "unexpected";
 
@@ -109,6 +116,12 @@ export const PROJECT_ERROR_MESSAGES: Record<ProjectErrorCode, string> = {
   blocked_reason_required: "Use “Mark blocked” and add a reason.",
   review_reason_required: "Use “Request changes” and add a reason.",
   invalid_action: "That action is not available.",
+  invalid_comment: "Write a comment of up to 5,000 characters.",
+  invalid_mention: "You can only mention people who have access to this project.",
+  too_many_mentions: "Mention at most 20 people in one comment.",
+  invalid_parent_comment: "You can only reply to a top-level comment on this work item.",
+  comment_not_found: "This comment no longer exists.",
+  comment_deleted: "This comment was deleted.",
   unavailable: "Project data is temporarily unavailable. Please try again.",
   unexpected: "Something went wrong. Please try again.",
 };
@@ -145,11 +158,12 @@ const VALIDATION_MESSAGES = new Set<ProjectErrorCode>([
   "invalid_sprint_name", "invalid_sprint_goal", "invalid_sprint_dates", "invalid_capacity", "invalid_sprint_transition",
   "in_another_sprint", "not_in_sprint", "not_schedulable", "unfinished_work_requires_decision", "invalid_carry_over_sprint",
   "reason_required", "blocked_reason_required", "review_reason_required", "invalid_action",
+  "invalid_comment", "invalid_mention", "too_many_mentions", "invalid_parent_comment",
 ]);
 
 const STATE_MESSAGES = new Set<ProjectErrorCode>([
   "project_archived", "work_item_archived", "parent_archived", "has_active_children", "sprint_closed", "sprint_started",
-  "status_changed",
+  "status_changed", "comment_deleted",
 ]);
 
 const MISSING_FUNCTION_CODES = new Set(["PGRST202", "42883"]);
@@ -171,7 +185,8 @@ export function mapProjectDatabaseError(error: DatabaseErrorLike | null | undefi
     case "42501":
       return message === "unauthenticated" ? "unauthenticated" : "forbidden";
     case "P0002":
-      return message === "member_not_found" ? "member_not_found" : "not_found";
+      if (message === "member_not_found" || message === "comment_not_found") return message;
+      return "not_found";
     case "23505":
       if (message === "duplicate_member" || message === "active_sprint_exists" || message === "already_in_sprint") return message;
       return "duplicate_project_key";

@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, ArrowLeft, BadgeCheck, CornerLeftUp, KanbanSquare, OctagonAlert, Plus, RotateCcw } from "lucide-react";
+import { Archive, ArrowLeft, BadgeCheck, CornerLeftUp, KanbanSquare, MessageSquare, OctagonAlert, Plus, RotateCcw } from "lucide-react";
 
 import { requireActiveProfile } from "@/features/auth/server";
+import { CommentDiscussion } from "@/features/comments/components/comment-discussion";
+import { listComments } from "@/features/comments/queries.server";
+import { getMyResolvedAvatar } from "@/features/profile/avatars.server";
+import { PROJECT_ERROR_MESSAGES } from "@/features/projects/errors";
 import { ProjectPriorityBadge } from "@/features/projects/components/project-badges";
 import { ActivityFeed } from "@/features/projects/components/project-activity";
 import { ProjectLoadError } from "@/features/projects/components/project-header";
@@ -41,17 +45,22 @@ export default async function WorkItemPage({ params }: { params: Promise<{ proje
   const { projectId, workItemId } = await params;
   if (!isUuid(projectId) || !isUuid(workItemId)) notFound();
 
-  const result = await loadProjectForPage(async () => {
-    const [item, project, members, children, history, execution] = await Promise.all([
-      getWorkItem(workItemId),
-      getProject(projectId),
-      listProjectMembers(projectId),
-      listWorkItemChildren(workItemId),
-      listProjectActivity(projectId, null, workItemId),
-      getWorkItemExecution(workItemId),
-    ]);
-    return { item, project, members, children, history, execution };
-  });
+  const [result, comments, myAvatar] = await Promise.all([
+    loadProjectForPage(async () => {
+      const [item, project, members, children, history, execution] = await Promise.all([
+        getWorkItem(workItemId),
+        getProject(projectId),
+        listProjectMembers(projectId),
+        listWorkItemChildren(workItemId),
+        listProjectActivity(projectId, null, workItemId),
+        getWorkItemExecution(workItemId),
+      ]);
+      return { item, project, members, children, history, execution };
+    }),
+    // Loaded alongside; a discussion failure keeps the rest of the page usable.
+    loadProjectForPage(() => listComments(workItemId)),
+    getMyResolvedAvatar(),
+  ]);
   if (result.error) return <ProjectLoadError code={result.error} retryHref={`/projects/${projectId}/work/${workItemId}`} />;
   const { item, project, members, children, history, execution } = result.data;
   // An item from another project is treated as missing under this URL.
@@ -151,6 +160,21 @@ export default async function WorkItemPage({ params }: { params: Promise<{ proje
               )}
             </section>
           )}
+
+          <section className={cn(card, "p-5 sm:p-6")} aria-labelledby="wi-discussion">
+            <h2 id="wi-discussion" className="mb-4 flex items-center gap-2 text-base font-semibold">
+              <MessageSquare aria-hidden="true" className="size-4 text-text-secondary" />Discussion
+            </h2>
+            {comments.error ? (
+              <div role="alert" className="flex flex-col items-start gap-3 rounded-lg border border-danger/30 bg-danger/5 p-4 text-sm">
+                <p><span className="font-medium text-danger">Couldn’t load the discussion.</span> {PROJECT_ERROR_MESSAGES[comments.error]}</p>
+                <Link href={`/projects/${project.id}/work/${item.id}`} className={cn(secondaryButton, "h-8 px-3 text-xs")}>Try again</Link>
+              </div>
+            ) : (
+              <CommentDiscussion workItemId={item.id} initialPage={comments.data} canWrite={writable}
+                viewer={{ id: profile.id, name: profile.full_name?.trim() || null, avatar: myAvatar ?? { type: "initials" } }} />
+            )}
+          </section>
 
           <section className={cn(card, "overflow-hidden")} aria-labelledby="wi-history">
             <div className="border-b border-border px-5 py-3.5 sm:px-6">

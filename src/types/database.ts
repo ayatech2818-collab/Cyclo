@@ -112,6 +112,64 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"work_item_comment_mentions": {
+                  Row: {
+                    "comment_id": string,"created_at": string,"profile_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "comment_id": string,"created_at"?: string,"profile_id": string
+                  }
+                  Update: {
+                    "comment_id"?: string,"created_at"?: string,"profile_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "work_item_comment_mentions_comment_id_fkey"
+      columns: ["comment_id"]
+isOneToOne: false
+      referencedRelation: "work_item_comments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "work_item_comment_mentions_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"work_item_comments": {
+                  Row: {
+                    "author_id": string,"body": string | null,"created_at": string,"deleted_at": string | null,"edited_at": string | null,"id": string,"parent_comment_id": string | null,"project_id": string,"updated_at": string,"work_item_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id": string,"body"?: string | null,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"id"?: string,"parent_comment_id"?: string | null,"project_id": string,"updated_at"?: string,"work_item_id": string
+                  }
+                  Update: {
+                    "author_id"?: string,"body"?: string | null,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"id"?: string,"parent_comment_id"?: string | null,"project_id"?: string,"updated_at"?: string,"work_item_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "work_item_comments_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "work_item_comments_item_fkey"
+      columns: ["project_id","work_item_id"]
+isOneToOne: false
+      referencedRelation: "work_items"
+      referencedColumns: ["project_id","id"]
+    },{
+      foreignKeyName: "work_item_comments_parent_same_item_fkey"
+      columns: ["work_item_id","parent_comment_id"]
+isOneToOne: false
+      referencedRelation: "work_item_comments"
+      referencedColumns: ["work_item_id","id"]
+    }
+                  ]
                 },"work_items": {
                   Row: {
                     "archived_at": string | null,"assignee_id": string | null,"backlog_rank": number,"blocked_from_status": Database["public"]['Enums']["work_item_status"] | null,"blocked_reason": string | null,"completed_at": string | null,"created_at": string,"description": string | null,"due_date": string | null,"estimate": number | null,"id": string,"issue_key": string,"issue_number": number,"parent_id": string | null,"priority": Database["public"]['Enums']["project_priority"],"project_id": string,"reporter_id": string,"sprint_id": string | null,"start_date": string | null,"status": Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"],"updated_at": string
@@ -274,6 +332,16 @@ isOneToOne: false
 "create_work_item":
 { Args: { "p_assignee_id"?: string,"p_description"?: string,"p_due_date"?: string,"p_estimate"?: number,"p_parent_id"?: string,"p_priority"?: Database["public"]['Enums']["project_priority"],"p_project_id": string,"p_start_date"?: string,"p_status"?: Database["public"]['Enums']["work_item_status"],"p_title": string,"p_type": Database["public"]['Enums']["work_item_type"] }; Returns: string
                            },
+"create_work_item_comment":
+{ Args: { "p_body": string,"p_parent_comment_id"?: string,"p_work_item_id": string }; Returns: {
+              "author_avatar_kind": string,"author_avatar_symbol": string,"author_id": string,"author_name": string,"body": string,"created_at": string,"deleted_at": string,"edited_at": string,"id": string,"mentions": Json,"parent_comment_id": string,"reply_count": number,"work_item_id": string
+            }[]
+                           },
+"delete_work_item_comment":
+{ Args: { "p_comment_id": string }; Returns: {
+              "author_avatar_kind": string,"author_avatar_symbol": string,"author_id": string,"author_name": string,"body": string,"created_at": string,"deleted_at": string,"edited_at": string,"id": string,"mentions": Json,"parent_comment_id": string,"reply_count": number,"work_item_id": string
+            }[]
+                           },
 "execute_work_item":
 { Args: { "p_action": string,"p_expected_status": Database["public"]['Enums']["work_item_status"],"p_reason"?: string,"p_work_item_id": string }; Returns: {
               "blocked_from_status": Database["public"]['Enums']["work_item_status"],"blocked_reason": string,"changed": boolean,"id": string,"status": Database["public"]['Enums']["work_item_status"],"updated_at": string
@@ -322,6 +390,11 @@ isOneToOne: false
 "list_backlog":
 { Args: { "p_assignee_id"?: string,"p_epic_id"?: string,"p_group"?: string,"p_include_completed"?: boolean,"p_no_epic"?: boolean,"p_page"?: number,"p_page_size"?: number,"p_priority"?: Database["public"]['Enums']["project_priority"],"p_project_id": string,"p_search"?: string,"p_status"?: Database["public"]['Enums']["work_item_status"],"p_type"?: Database["public"]['Enums']["work_item_type"],"p_unassigned"?: boolean }; Returns: {
               "assignee_id": string,"assignee_name": string,"backlog_rank": number,"epic_id": string,"epic_key": string,"epic_title": string,"estimate": number,"id": string,"issue_key": string,"priority": Database["public"]['Enums']["project_priority"],"status": Database["public"]['Enums']["work_item_status"],"subtask_count": number,"title": string,"total_count": number,"type": Database["public"]['Enums']["work_item_type"]
+            }[]
+                           },
+"list_comment_replies":
+{ Args: { "p_after_created_at"?: string,"p_after_id"?: string,"p_limit"?: number,"p_parent_comment_id": string }; Returns: {
+              "author_avatar_kind": string,"author_avatar_symbol": string,"author_id": string,"author_name": string,"body": string,"created_at": string,"deleted_at": string,"edited_at": string,"id": string,"mentions": Json,"parent_comment_id": string,"reply_count": number,"work_item_id": string
             }[]
                            },
 "list_employees":
@@ -374,6 +447,11 @@ isOneToOne: false
               "archived_at": string,"assignee_name": string,"id": string,"issue_key": string,"priority": Database["public"]['Enums']["project_priority"],"status": Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"]
             }[]
                            },
+"list_work_item_comments":
+{ Args: { "p_after_created_at"?: string,"p_after_id"?: string,"p_limit"?: number,"p_reply_limit"?: number,"p_work_item_id": string }; Returns: {
+              "author_avatar_kind": string,"author_avatar_symbol": string,"author_id": string,"author_name": string,"body": string,"created_at": string,"deleted_at": string,"edited_at": string,"id": string,"mentions": Json,"parent_comment_id": string,"reply_count": number,"work_item_id": string
+            }[]
+                           },
 "list_work_item_parent_options":
 { Args: { "p_child_type": Database["public"]['Enums']["work_item_type"],"p_exclude_id"?: string,"p_limit"?: number,"p_project_id": string,"p_search"?: string }; Returns: {
               "id": string,"issue_key": string,"title": string,"type": Database["public"]['Enums']["work_item_type"]
@@ -410,6 +488,11 @@ isOneToOne: false
 "review_queue_summary":
 { Args: Record<PropertyKey, never>; Returns: {
               "id": string,"label": string,"oldest_submitted_at": string,"pending_count": number,"project_key": string,"scope": string
+            }[]
+                           },
+"search_comment_mentions":
+{ Args: { "p_limit"?: number,"p_search"?: string,"p_work_item_id": string }; Returns: {
+              "avatar_kind": string,"avatar_symbol": string,"full_name": string,"id": string,"is_project_manager": boolean,"role": Database["public"]['Enums']["app_role"]
             }[]
                            },
 "set_my_avatar":
@@ -464,6 +547,11 @@ isOneToOne: false
                            },
 "update_work_item":
 { Args: { "p_description"?: string,"p_due_date"?: string,"p_estimate"?: number,"p_start_date"?: string,"p_title": string,"p_work_item_id": string }; Returns: string
+                           },
+"update_work_item_comment":
+{ Args: { "p_body": string,"p_comment_id": string }; Returns: {
+              "author_avatar_kind": string,"author_avatar_symbol": string,"author_id": string,"author_name": string,"body": string,"created_at": string,"deleted_at": string,"edited_at": string,"id": string,"mentions": Json,"parent_comment_id": string,"reply_count": number,"work_item_id": string
+            }[]
                            },
 "work_item_execution":
 { Args: { "p_work_item_id": string }; Returns: {
