@@ -349,6 +349,11 @@ isOneToOne: false
               "archived_at": string,"created_at": string,"description": string,"id": string,"name": string,"priority": Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_id": string,"project_manager_name": string,"start_date": string,"status": Database["public"]['Enums']["project_status"],"target_date": string,"total_count": number,"updated_at": string
             }[]
                            },
+"list_review_queue":
+{ Args: { "p_assignee_id"?: string,"p_min_age_days"?: number,"p_page"?: number,"p_page_size"?: number,"p_priority"?: Database["public"]['Enums']["project_priority"],"p_project_id"?: string,"p_search"?: string,"p_sort"?: string,"p_unassigned"?: boolean }; Returns: {
+              "assignee_id": string,"assignee_name": string,"id": string,"issue_key": string,"issue_number": number,"priority": Database["public"]['Enums']["project_priority"],"project_id": string,"project_key": string,"project_name": string,"submitted_at": string,"title": string,"total_count": number,"type": Database["public"]['Enums']["work_item_type"]
+            }[]
+                           },
 "list_sprint_board":
 { Args: { "p_sprint_id": string }; Returns: {
               "assignee_id": string,"assignee_name": string,"backlog_rank": number,"blocked_from_status": Database["public"]['Enums']["work_item_status"],"blocked_reason": string,"estimate": number,"id": string,"issue_key": string,"priority": Database["public"]['Enums']["project_priority"],"status": Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"],"updated_at": string
@@ -401,6 +406,11 @@ isOneToOne: false
                            },
 "restore_work_item":
 { Args: { "p_work_item_id": string }; Returns: string
+                           },
+"review_queue_summary":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "id": string,"label": string,"oldest_submitted_at": string,"pending_count": number,"project_key": string,"scope": string
+            }[]
                            },
 "set_my_avatar":
 { Args: { "p_kind": string,"p_symbol"?: string }; Returns: {

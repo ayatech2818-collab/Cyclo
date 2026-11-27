@@ -8,6 +8,7 @@ import { EmployeeAvatar } from "@/features/employees/components/employee-avatar"
 import type { ResolvedAvatar } from "@/features/profile/avatar";
 import { ROLE_LABELS } from "@/features/employees/types";
 import { canViewDirectory } from "@/features/employees/validation";
+import { canUseReviewInbox } from "@/features/reviews/logic";
 import type { ThemePreference } from "@/lib/theme/theme";
 
 import { NavLink } from "./nav-link";
@@ -35,6 +36,7 @@ export function AppHeader({ profile, theme, avatar = null }: { profile: ActivePr
         <nav aria-label="Main" className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
           <NavLink href="/dashboard">Dashboard</NavLink>
           <NavLink href="/projects">Projects</NavLink>
+          {canUseReviewInbox(profile.role) && <NavLink href="/reviews">Reviews</NavLink>}
           {canViewDirectory(profile.role) && <NavLink href="/employees">Employees</NavLink>}
         </nav>
 
