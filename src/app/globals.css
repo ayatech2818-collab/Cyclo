@@ -221,3 +221,22 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Notifications (Phase 8G3): a newly arrived row fades in; the unread badge pops. */
+@keyframes notification-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes badge-pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}

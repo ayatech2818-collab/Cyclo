@@ -8,7 +8,71 @@ export type Database = {
   
   "public": {
           Tables: {
-            "profiles": {
+            "notification_preferences": {
+                  Row: {
+                    "category": string,"in_app": boolean,"profile_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "category": string,"in_app"?: boolean,"profile_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "category"?: string,"in_app"?: boolean,"profile_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notification_preferences_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notifications": {
+                  Row: {
+                    "actor_id": string | null,"audit_id": string,"category": string,"comment_id": string | null,"created_at": string,"dedupe_key": string,"event_type": string,"id": string,"project_id": string,"read_at": string | null,"recipient_id": string,"work_item_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actor_id"?: string | null,"audit_id": string,"category": string,"comment_id"?: string | null,"created_at"?: string,"dedupe_key": string,"event_type": string,"id"?: string,"project_id": string,"read_at"?: string | null,"recipient_id": string,"work_item_id"?: string | null
+                  }
+                  Update: {
+                    "actor_id"?: string | null,"audit_id"?: string,"category"?: string,"comment_id"?: string | null,"created_at"?: string,"dedupe_key"?: string,"event_type"?: string,"id"?: string,"project_id"?: string,"read_at"?: string | null,"recipient_id"?: string,"work_item_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_actor_id_fkey"
+      columns: ["actor_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_comment_id_fkey"
+      columns: ["comment_id"]
+isOneToOne: false
+      referencedRelation: "work_item_comments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_recipient_id_fkey"
+      columns: ["recipient_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_work_item_id_fkey"
+      columns: ["work_item_id"]
+isOneToOne: false
+      referencedRelation: "work_items"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
                   Row: {
                     "avatar_kind": string,"avatar_path": string | null,"avatar_symbol": string | null,"avatar_url": string | null,"created_at": string,"email": string | null,"employee_code": string | null,"full_name": string | null,"id": string,"invited_by": string | null,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string | null,"requires_onboarding": boolean,"role": Database["public"]['Enums']["app_role"],"updated_at": string
                   }
@@ -367,6 +431,16 @@ isOneToOne: false
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"is_git_organizer": boolean,"onboarded_at": string,"role": Database["public"]['Enums']["app_role"]
             }[]
                            },
+"get_notification_preferences":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "category": string,"in_app": boolean
+            }[]
+                           },
+"get_notifications":
+{ Args: { "p_ids": (string)[] }; Returns: {
+              "accessible": boolean,"actor_avatar_kind": string,"actor_avatar_symbol": string,"actor_id": string,"actor_name": string,"category": string,"comment_body": string,"comment_id": string,"comment_mentions": Json,"created_at": string,"event_type": string,"id": string,"issue_key": string,"project_id": string,"project_key": string,"project_name": string,"read_at": string,"reason": string,"work_item_id": string,"work_item_title": string
+            }[]
+                           },
 "get_project":
 { Args: { "p_project_id": string }; Returns: {
               "archived_at": string,"created_at": string,"created_by": string,"created_by_name": string,"description": string,"id": string,"name": string,"priority": Database["public"]['Enums']["project_priority"],"project_key": string,"project_manager_email": string,"project_manager_id": string,"project_manager_is_active": boolean,"project_manager_name": string,"start_date": string,"status": Database["public"]['Enums']["project_status"],"target_date": string,"updated_at": string
@@ -405,6 +479,11 @@ isOneToOne: false
 "list_employees":
 { Args: { "p_is_active"?: boolean,"p_page"?: number,"p_page_size"?: number,"p_role"?: Database["public"]['Enums']["app_role"],"p_search"?: string }; Returns: {
               "avatar_url": string,"email": string,"employee_code": string,"full_name": string,"id": string,"is_active": boolean,"role": Database["public"]['Enums']["app_role"],"total_count": number
+            }[]
+                           },
+"list_notifications":
+{ Args: { "p_before_created_at"?: string,"p_before_id"?: string,"p_category"?: string,"p_limit"?: number,"p_status"?: string }; Returns: {
+              "accessible": boolean,"actor_avatar_kind": string,"actor_avatar_symbol": string,"actor_id": string,"actor_name": string,"category": string,"comment_body": string,"comment_id": string,"comment_mentions": Json,"created_at": string,"event_type": string,"id": string,"issue_key": string,"project_id": string,"project_key": string,"project_name": string,"read_at": string,"reason": string,"work_item_id": string,"work_item_title": string
             }[]
                            },
 "list_project_activity":
@@ -467,11 +546,20 @@ isOneToOne: false
               "archived_at": string,"assignee_id": string,"assignee_name": string,"child_count": number,"created_at": string,"due_date": string,"estimate": number,"id": string,"issue_key": string,"issue_number": number,"parent_id": string,"parent_issue_key": string,"priority": Database["public"]['Enums']["project_priority"],"status": Database["public"]['Enums']["work_item_status"],"title": string,"total_count": number,"type": Database["public"]['Enums']["work_item_type"],"updated_at": string
             }[]
                            },
+"mark_all_notifications_read":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"mark_notifications_read":
+{ Args: { "p_ids": (string)[] }; Returns: number
+                           },
 "move_backlog_item":
 { Args: { "p_after_id"?: string,"p_before_id"?: string,"p_work_item_id": string }; Returns: string
                            },
 "move_work_items_between_sprints":
 { Args: { "p_from_sprint_id": string,"p_to_sprint_id": string,"p_work_item_ids": (string)[] }; Returns: number
+                           },
+"notification_unread_count":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "remove_my_avatar_image":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -509,6 +597,9 @@ isOneToOne: false
 { Args: { "p_path": string }; Returns: {
               "avatar_kind": string,"avatar_path": string,"avatar_symbol": string,"previous_path": string
             }[]
+                           },
+"set_notification_preference":
+{ Args: { "p_category": string,"p_in_app": boolean }; Returns: undefined
                            },
 "set_sprint_capacity":
 { Args: { "p_capacity_points"?: number,"p_sprint_id": string }; Returns: string

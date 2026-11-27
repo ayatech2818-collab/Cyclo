@@ -244,6 +244,7 @@ test("header links to the profile and shows the resolved avatar", () => {
     "next/link": { __esModule: true, default: ({ href, children, ...props }) => React.createElement("a", { href, ...props }, children) },
     "@/features/auth/actions": { logout: async () => {} },
     "@/components/theme/theme-toggle": { ThemeToggle: () => null },
+    "@/features/notifications/components/notification-bell": { NotificationBell: () => React.createElement("button", { "aria-label": "Notifications" }) },
     "./nav-link": { NavLink: ({ href, children }) => React.createElement("a", { href }, children) },
   });
   const html = renderToStaticMarkup(React.createElement(AppHeader, {
@@ -254,4 +255,5 @@ test("header links to the profile and shows the resolved avatar", () => {
   assert.match(html, /href="\/profile"/);
   assert.match(html, /🚀/);
   assert.doesNotMatch(html, /href="\/employees"/, "developers still get no directory link");
+  assert.match(html, /aria-label="Notifications"/, "every employee gets the notification bell");
 });

@@ -340,7 +340,8 @@ function CommentItem({ comment, viewer, now, timeZone, canWrite, workItemId, com
   }
 
   return (
-    <article aria-label={`Comment by ${name}`} aria-busy={pending} className={cn("group flex gap-3", pending && "opacity-70")}>
+    <article id={pending ? undefined : `comment-${comment.id}`} aria-label={`Comment by ${name}`} aria-busy={pending}
+      className={cn("group flex scroll-mt-24 gap-3 rounded-lg target:bg-accent/5 target:ring-2 target:ring-accent/30 target:ring-offset-4 target:ring-offset-surface", pending && "opacity-70")}>
       <EmployeeAvatar fullName={comment.authorName} email={null} avatarUrl={null} avatar={comment.authorAvatar} size="sm" />
       <div className="min-w-0 flex-1">
         <header className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
