@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { CornerDownRight, Loader2, MessageSquare, MessageSquareX, Pencil, Reply, Trash2 } from "lucide-react";
 
 import { EmployeeAvatar } from "@/features/employees/components/employee-avatar";
@@ -9,8 +9,12 @@ import { formatActivityDateTime, relativeTime } from "@/features/projects/activi
 import { useViewerClock } from "@/features/projects/components/project-activity";
 import { cn } from "@/lib/utils/cn";
 
-import { createCommentAction, deleteCommentAction, loadMoreCommentsAction, loadMoreRepliesAction, updateCommentAction } from "../actions";
-import { bodySegments, mentionedIds, toEditorText, type Comment, type CommentCursor, type CommentMention, type CommentPage, type CommentThread } from "../logic";
+import { createCommentAction, deleteCommentAction, fetchCommentsAction, loadMoreCommentsAction, loadMoreRepliesAction, resyncCommentsAction, updateCommentAction } from "../actions";
+import {
+  bodySegments, confirmPending, mentionedIds, mergeLiveComments, resyncThreads, toEditorText,
+  type Comment, type CommentCursor, type CommentMention, type CommentPage, type CommentThread,
+} from "../logic";
+import { useLiveComments } from "../use-live-comments";
 import { CommentComposer } from "./comment-composer";
 
 export type DiscussionViewer = { id: string; name: string | null; avatar: ResolvedAvatar };
@@ -48,6 +52,47 @@ export function CommentDiscussion({ workItemId, initialPage, viewer, canWrite }:
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const { now, timeZone } = useViewerClock();
 
+  // --- live updates ------------------------------------------------------------
+  const endLoaded = useRef(initialPage.nextCursor === null);
+  const loadedThreads = useRef(initialPage.threads.length);
+  useEffect(() => {
+    endLoaded.current = cursor === null;
+    loadedThreads.current = threads.filter((thread) => !isTemp(thread.comment.id)).length;
+  }, [cursor, threads]);
+  const resyncing = useRef(false);
+
+  const live = useLiveComments(workItemId, {
+    onChanged: async (ids) => {
+      let result;
+      try {
+        result = await fetchCommentsAction(workItemId, ids);
+      } catch {
+        return; // the next reconnect resync catches up
+      }
+      if (result.ok) setThreads((current) => mergeLiveComments(current, result.page, endLoaded.current));
+    },
+    onRemoved: (id) => setThreads((current) => current
+      .filter((thread) => thread.comment.id !== id)
+      .map((thread) => (thread.replies.some((reply) => reply.id === id)
+        ? { ...thread, replies: thread.replies.filter((reply) => reply.id !== id), comment: { ...thread.comment, replyCount: Math.max(0, thread.comment.replyCount - 1) } }
+        : thread))),
+    onResync: async () => {
+      if (resyncing.current) return;
+      resyncing.current = true;
+      try {
+        const result = await resyncCommentsAction(workItemId, loadedThreads.current);
+        if (result.ok) {
+          setThreads((current) => resyncThreads(result.page.threads, current));
+          setCursor(result.page.nextCursor);
+        }
+      } catch {
+        // Keep what is on screen; the next reconnect tries again.
+      } finally {
+        resyncing.current = false;
+      }
+    },
+  });
+
   const total = threads.reduce((sum, thread) => sum + (thread.comment.deletedAt ? 0 : 1) + thread.replies.length, 0);
 
   // --- state helpers -------------------------------------------------------
@@ -72,7 +117,8 @@ export function CommentDiscussion({ workItemId, initialPage, viewer, canWrite }:
       result = { ok: false as const, error: "The comment could not be saved. Check your connection and try again.", code: "unavailable" as const };
     }
     if (result.ok) {
-      replaceComment(draft.id, result.comment);
+      // If the live event already added the real comment, the optimistic copy simply goes.
+      setThreads((current) => confirmPending(current, draft.id, result.comment));
       if (parentId) setReplyingTo(null);
       return true;
     }
@@ -189,6 +235,10 @@ export function CommentDiscussion({ workItemId, initialPage, viewer, canWrite }:
 
   return (
     <div className="space-y-5">
+      <p role="status" className={cn("-mt-2 flex items-center gap-1.5 text-xs", live === "reconnecting" ? "text-warning" : "text-text-muted")}>
+        <span aria-hidden="true" className={cn("size-1.5 rounded-full", live === "live" ? "bg-success" : live === "reconnecting" ? "animate-pulse bg-warning" : "bg-text-muted")} />
+        {live === "live" ? "Live" : live === "reconnecting" ? "Reconnecting… new comments will appear when the connection is back." : "Connecting…"}
+      </p>
       <div aria-live="polite" className="min-h-0 text-sm empty:hidden">
         {notice && <p role={notice.tone === "error" ? "alert" : "status"} className={notice.tone === "error" ? "text-danger" : "text-success"}>{notice.text}</p>}
       </div>

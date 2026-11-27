@@ -63,6 +63,7 @@ export function CommentComposer({
     }
     const request = ++latest.current;
     setSearching(true);
+    setResults([]); // never let Enter pick a result for an older query
     const timer = setTimeout(async () => {
       let result;
       try {
@@ -89,7 +90,7 @@ export function CommentComposer({
   const tooLong = stored.length > COMMENT_MAX;
 
   const track = (value: string, caret: number) => {
-    const next = mentionQueryAt(value, caret);
+    const next = mentionQueryAt(value, caret, picked.map((person) => person.name ?? "").filter(Boolean));
     setMention(next);
     if (!next || next.query !== mention?.query) setActive(0);
   };
@@ -130,14 +131,15 @@ export function CommentComposer({
   }
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Ctrl/Cmd+Enter always sends, even with the mention list open.
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); setMention(null); void submit(); return; }
     if (open && results.length > 0) {
       if (event.key === "ArrowDown") { event.preventDefault(); setActive((index) => (index + 1) % results.length); return; }
       if (event.key === "ArrowUp") { event.preventDefault(); setActive((index) => (index - 1 + results.length) % results.length); return; }
       if (event.key === "Enter" || event.key === "Tab") { event.preventDefault(); choose(results[Math.min(active, results.length - 1)]); return; }
     }
     if (open && event.key === "Escape") { event.preventDefault(); setMention(null); return; }
-    if (event.key === "Escape" && onCancel) { event.preventDefault(); onCancel(); return; }
-    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void submit(); }
+    if (event.key === "Escape" && onCancel) { event.preventDefault(); onCancel(); }
   };
 
   const listId = `${id}-mentions`;

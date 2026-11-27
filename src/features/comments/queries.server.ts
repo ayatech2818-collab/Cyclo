@@ -65,6 +65,26 @@ export async function listReplies(parentId: string, cursor: CommentCursor): Prom
   return toReplyPage(await toComments(data ?? []));
 }
 
+/** Re-reads specific comments of one item (Realtime events are signals only). */
+export async function getCommentsByIds(workItemId: string, ids: readonly string[]): Promise<Comment[]> {
+  if (!isUuid(workItemId) || ids.length === 0 || ids.length > 50 || !ids.every(isUuid)) throw new ProjectError("invalid_input");
+  const supabase = await client();
+  const { data, error } = await supabase.rpc("get_work_item_comments", { p_work_item_id: workItemId, p_ids: [...new Set(ids)] });
+  if (error) failProject("get_work_item_comments", error);
+  return toComments(data ?? []);
+}
+
+/** Up to 10 pages from the start, until at least `minThreads` threads (resync after a reconnect). */
+export async function listCommentsFromStart(workItemId: string, minThreads: number): Promise<CommentPage> {
+  let page = await listComments(workItemId);
+  const threads = [...page.threads];
+  for (let pages = 1; threads.length < minThreads && page.nextCursor && pages < 10; pages += 1) {
+    page = await listComments(workItemId, page.nextCursor);
+    threads.push(...page.threads);
+  }
+  return { threads, nextCursor: page.nextCursor };
+}
+
 /** Eligible people for the @ autocomplete (bounded; never the whole directory). */
 export async function searchMentionCandidates(workItemId: string, search: string): Promise<MentionCandidate[]> {
   if (!isUuid(workItemId)) throw new ProjectError("not_found");

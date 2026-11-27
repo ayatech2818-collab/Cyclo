@@ -171,7 +171,8 @@ export default async function WorkItemPage({ params }: { params: Promise<{ proje
                 <Link href={`/projects/${project.id}/work/${item.id}`} className={cn(secondaryButton, "h-8 px-3 text-xs")}>Try again</Link>
               </div>
             ) : (
-              <CommentDiscussion workItemId={item.id} initialPage={comments.data} canWrite={writable}
+              // Keyed: moving to another work item starts a fresh discussion (and subscription).
+              <CommentDiscussion key={item.id} workItemId={item.id} initialPage={comments.data} canWrite={writable}
                 viewer={{ id: profile.id, name: profile.full_name?.trim() || null, avatar: myAvatar ?? { type: "initials" } }} />
             )}
           </section>

@@ -200,3 +200,92 @@ test("the autocomplete finds the @query at the caret and inserts the name", () =
   assert.deepEqual(insertMention(text, 11, query, "Priya Manager"), { text: "Thanks @Priya Manager for this", caret: 22 });
   assert.deepEqual(insertMention("@", 1, { start: 0, query: "" }, "Dev"), { text: "@Dev ", caret: 5 });
 });
+
+// ---------------------------------------------------------------------------
+// Live updates (Realtime)
+// ---------------------------------------------------------------------------
+
+const realtimeMigration = read("../supabase/migrations/20261204100000_comment_realtime.sql");
+const hook = read("../src/features/comments/use-live-comments.ts");
+const { mergeLiveComments, confirmPending, resyncThreads } = comments;
+
+test("only comments are published; event payloads are signals, re-read with access checks", () => {
+  assert.match(realtimeMigration, /alter publication supabase_realtime add table public\.work_item_comments;/);
+  assert.doesNotMatch(realtimeMigration, /add table public\.work_item_comment_mentions/, "mentions are not streamed");
+  assert.doesNotMatch(realtimeMigration, /disable row level security|grant[^;]*to anon/i);
+  assert.match(realtimeMigration, /perform private\.comment_read_access\(p_work_item_id\)/);
+  assert.match(realtimeMigration, /where c\.id = any \(p_ids\) and c\.work_item_id = p_work_item_id/);
+  assert.match(hook, /import \{ createClient \} from "@\/lib\/supabase\/client"/, "browser client (publishable key + own session)");
+  assert.doesNotMatch(hook, /SECRET|SERVICE_ROLE|admin/i, "no privileged credentials in the browser");
+  assert.match(hook, /filter: `work_item_id=eq\.\$\{workItemId\}`/, "one work item per subscription");
+  assert.match(hook, /return \(\) => \{\s+active = false;[\s\S]*removeChannel\(channel\)/, "unsubscribes on unmount / item change");
+  assert.match(hook, /\}, \[workItemId\]\);/);
+  assert.doesNotMatch(hook, /payload\.new\)?\.body|\.body\b/, "payload text is never used");
+});
+
+const c = (n, overrides = {}) => toComment(row({ id: id(n), created_at: `2026-12-03T10:${String(n % 60).padStart(2, "0")}:00Z`, ...overrides }));
+const thread = (comment, replies = [], repliesCursor = null) => ({ comment, replies, repliesCursor });
+
+test("live comments merge without duplicates and respect pagination", () => {
+  const start = [thread(c(1)), thread(c(2))];
+  const added = mergeLiveComments(start, [c(3)], true);
+  assert.deepEqual(added.map((entry) => entry.comment.id), [id(1), id(2), id(3)]);
+  assert.deepEqual(mergeLiveComments(added, [c(3)], true).map((entry) => entry.comment.id), [id(1), id(2), id(3)], "the same event twice adds once");
+  assert.equal(mergeLiveComments(start, [c(3)], false).length, 2, "not shown until the end of the list is loaded");
+  const edited = mergeLiveComments(start, [c(2, { body: "Edited", edited_at: "2026-12-03T12:00:00Z" })], false);
+  assert.equal(edited[1].comment.body, "Edited", "edits apply on any loaded page");
+  const deleted = mergeLiveComments(start, [c(2, { body: null, deleted_at: "2026-12-03T12:00:00Z" })], true);
+  assert.deepEqual(deleted.map((entry) => entry.comment.id), [id(1)], "a deleted comment without replies disappears");
+  assert.equal(mergeLiveComments(start, [c(9, { body: null, deleted_at: "2026-12-03T12:00:00Z" })], true).length, 2, "unknown deleted comments are ignored");
+  const pending = [thread(c(1)), thread({ ...c(5), id: "temp-1" })];
+  assert.deepEqual(mergeLiveComments(pending, [c(3)], true).map((entry) => entry.comment.id), [id(1), id(3), "temp-1"], "pending comments stay last");
+});
+
+test("live replies follow the thread's loaded state", () => {
+  const parent = c(1, { reply_count: 1 });
+  const r1 = c(50, { parent_comment_id: id(1) });
+  const r2 = c(51, { parent_comment_id: id(1) });
+  const open = [thread(parent, [r1])];
+  const withReply = mergeLiveComments(open, [r2], true);
+  assert.deepEqual(withReply[0].replies.map((reply) => reply.id), [id(50), id(51)]);
+  assert.equal(withReply[0].comment.replyCount, 2);
+  assert.deepEqual(mergeLiveComments(withReply, [r2], true)[0].replies.length, 2, "no duplicate replies");
+  const truncated = mergeLiveComments([thread(parent, [r1], { createdAt: r1.createdAt, id: r1.id })], [r2], true);
+  assert.deepEqual([truncated[0].replies.length, truncated[0].comment.replyCount], [1, 2], "a partly loaded thread only counts it");
+  const gone = mergeLiveComments(withReply, [c(51, { parent_comment_id: id(1), body: null, deleted_at: "2026-12-03T12:00:00Z" })], true);
+  assert.deepEqual([gone[0].replies.map((reply) => reply.id), gone[0].comment.replyCount], [[id(50)], 1]);
+  const deletedParent = [thread(c(1, { body: null, deleted_at: "2026-12-03T12:00:00Z", reply_count: 1 }), [r1])];
+  assert.equal(mergeLiveComments(deletedParent, [c(50, { parent_comment_id: id(1), body: null, deleted_at: "2026-12-03T12:00:00Z" })], true).length, 0,
+    "a deleted thread goes with its last reply");
+  assert.equal(mergeLiveComments([], [r2], true).length, 0, "replies to unloaded threads are ignored");
+});
+
+test("own comments: the optimistic copy is confirmed once, whichever arrives first", () => {
+  const temp = { ...c(7), id: "temp-9" };
+  const real = c(7);
+  assert.deepEqual(confirmPending([thread(c(1)), thread(temp)], "temp-9", real).map((entry) => entry.comment.id), [id(1), id(7)], "action first");
+  const liveFirst = mergeLiveComments([thread(c(1)), thread(temp)], [real], true);
+  assert.deepEqual(confirmPending(liveFirst, "temp-9", real).map((entry) => entry.comment.id), [id(1), id(7)], "live event first: no duplicate");
+
+  const parent = c(1, { reply_count: 1 });
+  const tempReply = { ...c(52, { parent_comment_id: id(1) }), id: "temp-r" };
+  const realReply = c(52, { parent_comment_id: id(1) });
+  const optimistic = [thread({ ...parent, replyCount: 1 }, [tempReply])];
+  const raced = confirmPending(mergeLiveComments(optimistic, [realReply], true), "temp-r", realReply);
+  assert.deepEqual([raced[0].replies.map((reply) => reply.id), raced[0].comment.replyCount], [[id(52)], 1], "reply counted once");
+});
+
+test("a resync keeps comments still being sent", () => {
+  const fresh = [thread(c(1)), thread(c(2))];
+  const current = [thread(c(1), [{ ...c(60, { parent_comment_id: id(1) }), id: "temp-r" }]), thread({ ...c(8), id: "temp-t" })];
+  const merged = resyncThreads(fresh, current);
+  assert.deepEqual(merged.map((entry) => entry.comment.id), [id(1), id(2), "temp-t"]);
+  assert.deepEqual(merged[0].replies.map((reply) => reply.id), ["temp-r"]);
+});
+
+test("a completed mention does not reopen the autocomplete (names contain spaces)", () => {
+  assert.equal(mentionQueryAt("Hi @Dev Kumar please", 20, ["Dev Kumar"]), null);
+  assert.equal(mentionQueryAt("Hi @Dev Kumar ", 14, ["Dev Kumar"]), null);
+  assert.deepEqual(mentionQueryAt("Hi @Dev Ku", 10, ["Dev Kumar"]), { start: 3, query: "Dev Ku" }, "still typing the name");
+  assert.deepEqual(mentionQueryAt("Hi @Dev Kumar please", 20), { start: 3, query: "Dev Kumar please" }, "without the pick it is a query");
+});

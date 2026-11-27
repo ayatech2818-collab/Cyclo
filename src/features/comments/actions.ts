@@ -7,7 +7,7 @@ import { requireActiveProfile } from "@/features/auth/server";
 import { createClient } from "@/lib/supabase/server";
 
 import { isCommentCursor, validateStoredBody, type Comment, type CommentPage, type MentionCandidate, type ReplyPage } from "./logic";
-import { listComments, listReplies, searchMentionCandidates, toComments } from "./queries.server";
+import { getCommentsByIds, listComments, listCommentsFromStart, listReplies, searchMentionCandidates, toComments } from "./queries.server";
 
 /*
  * Discussion Server Actions (Phase 8G2). The client sends only ids and text:
@@ -103,6 +103,26 @@ export async function loadMoreRepliesAction(parentId: string, cursor: unknown): 
   if (!isCommentCursor(cursor)) return { ok: false, error: "The replies could not be loaded. Reload the page." };
   try {
     return { ok: true, page: await listReplies(parentId, cursor) };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/** Live updates: re-reads the comments a Realtime event pointed at, with the caller's own access. */
+export async function fetchCommentsAction(workItemId: string, ids: unknown): Promise<LoadResult<Comment[]>> {
+  if (!Array.isArray(ids)) return { ok: false, error: "Updates could not be loaded." };
+  try {
+    return { ok: true, page: await getCommentsByIds(workItemId, ids.filter((id): id is string => typeof id === "string").slice(0, 50)) };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/** After a reconnect: the discussion from the start, covering at least what was on screen. */
+export async function resyncCommentsAction(workItemId: string, loadedThreads: unknown): Promise<LoadResult<CommentPage>> {
+  const minimum = typeof loadedThreads === "number" && Number.isInteger(loadedThreads) ? Math.min(Math.max(loadedThreads, 0), 200) : 0;
+  try {
+    return { ok: true, page: await listCommentsFromStart(workItemId, minimum) };
   } catch (error) {
     return failure(error);
   }

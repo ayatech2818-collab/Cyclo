@@ -183,6 +183,96 @@ export function isCommentCursor(value: unknown): value is CommentCursor {
 }
 
 // ---------------------------------------------------------------------------
+// Live updates (Realtime events are re-read, then merged here)
+// ---------------------------------------------------------------------------
+
+/** Optimistic comments not yet confirmed by the server. */
+export const isPendingId = (id: string) => id.startsWith("temp-");
+
+const byTime = (a: Pick<Comment, "createdAt" | "id">, b: Pick<Comment, "createdAt" | "id">) =>
+  Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id.localeCompare(b.id);
+
+/** Keeps pending (optimistic) entries after confirmed ones, as they were added last. */
+function insertSorted<T>(list: readonly T[], entry: T, key: (item: T) => Pick<Comment, "createdAt" | "id">): T[] {
+  const confirmed = list.filter((item) => !isPendingId(key(item).id));
+  const pending = list.filter((item) => isPendingId(key(item).id));
+  return [...confirmed, entry].sort((a, b) => byTime(key(a), key(b))).concat(pending);
+}
+
+/**
+ * Applies freshly read comments to the loaded discussion. Idempotent: an
+ * update for a comment already shown replaces it (never duplicates it), so the
+ * author's own events are harmless. A new top-level comment is added only when
+ * the end of the discussion is loaded (otherwise "Load more" brings it); a new
+ * reply only when its thread's replies are fully loaded (otherwise the count
+ * grows). Deleted comments disappear unless they still carry replies.
+ */
+export function mergeLiveComments(threads: readonly CommentThread[], incoming: readonly Comment[], endLoaded: boolean): CommentThread[] {
+  let next = [...threads];
+  for (const comment of [...incoming].sort(byTime)) {
+    if (comment.parentId === null) {
+      const index = next.findIndex((thread) => thread.comment.id === comment.id);
+      if (index >= 0) {
+        const thread = next[index];
+        if (comment.deletedAt && thread.replies.length === 0 && comment.replyCount === 0) {
+          next = next.filter((_, i) => i !== index);
+        } else {
+          next = next.map((entry, i) => (i === index ? { ...entry, comment: { ...comment, replyCount: Math.max(comment.replyCount, entry.replies.length) } } : entry));
+        }
+      } else if (!comment.deletedAt && endLoaded) {
+        next = insertSorted(next, { comment, replies: [], repliesCursor: null }, (thread) => thread.comment);
+      }
+      continue;
+    }
+    const index = next.findIndex((thread) => thread.comment.id === comment.parentId);
+    if (index < 0) continue; // its thread is not loaded
+    const thread = next[index];
+    const known = thread.replies.some((reply) => reply.id === comment.id);
+    let updated: CommentThread;
+    if (comment.deletedAt) {
+      if (!known) continue;
+      const replies = thread.replies.filter((reply) => reply.id !== comment.id);
+      updated = { ...thread, replies, comment: { ...thread.comment, replyCount: Math.max(0, thread.comment.replyCount - 1) } };
+      if (updated.comment.deletedAt && replies.length === 0 && updated.comment.replyCount === 0) {
+        next = next.filter((_, i) => i !== index);
+        continue;
+      }
+    } else if (known) {
+      updated = { ...thread, replies: thread.replies.map((reply) => (reply.id === comment.id ? comment : reply)) };
+    } else if (thread.repliesCursor) {
+      updated = { ...thread, comment: { ...thread.comment, replyCount: thread.comment.replyCount + 1 } };
+    } else {
+      const replies = insertSorted(thread.replies, comment, (reply) => reply);
+      updated = { ...thread, replies, comment: { ...thread.comment, replyCount: Math.max(thread.comment.replyCount + 1, replies.length) } };
+    }
+    next = next.map((entry, i) => (i === index ? updated : entry));
+  }
+  return next;
+}
+
+/** A confirmed comment replaces its optimistic copy; if a live event already added it, the copy just goes. */
+export function confirmPending(threads: readonly CommentThread[], tempId: string, confirmed: Comment): CommentThread[] {
+  const present = threads.some((thread) => thread.comment.id === confirmed.id || thread.replies.some((reply) => reply.id === confirmed.id));
+  return threads.flatMap((thread) => {
+    if (thread.comment.id === tempId) return present ? [] : [{ ...thread, comment: confirmed }];
+    if (!thread.replies.some((reply) => reply.id === tempId)) return [thread];
+    const replies = present ? thread.replies.filter((reply) => reply.id !== tempId) : thread.replies.map((reply) => (reply.id === tempId ? confirmed : reply));
+    // The live event already counted this reply; drop the optimistic increment.
+    const replyCount = present ? Math.max(thread.comment.replyCount - 1, replies.length) : thread.comment.replyCount;
+    return [{ ...thread, replies, comment: { ...thread.comment, replyCount } }];
+  });
+}
+
+/** After a reconnect: the server's view, plus anything still being sent. */
+export function resyncThreads(fresh: readonly CommentThread[], current: readonly CommentThread[]): CommentThread[] {
+  const pendingThreads = current.filter((thread) => isPendingId(thread.comment.id));
+  return fresh.map((thread) => {
+    const pendingReplies = current.find((entry) => entry.comment.id === thread.comment.id)?.replies.filter((reply) => isPendingId(reply.id)) ?? [];
+    return pendingReplies.length ? { ...thread, replies: [...thread.replies, ...pendingReplies] } : thread;
+  }).concat(pendingThreads);
+}
+
+// ---------------------------------------------------------------------------
 // Body ⇄ editor text
 // ---------------------------------------------------------------------------
 
@@ -262,7 +352,7 @@ export type MentionQuery = { start: number; query: string };
  * whitespace/punctuation, followed by up to 40 characters without a newline
  * (names contain spaces, so spaces are allowed).
  */
-export function mentionQueryAt(text: string, caret: number): MentionQuery | null {
+export function mentionQueryAt(text: string, caret: number, pickedNames: readonly string[] = []): MentionQuery | null {
   const before = text.slice(0, caret);
   const at = before.lastIndexOf("@");
   if (at === -1) return null;
@@ -270,6 +360,8 @@ export function mentionQueryAt(text: string, caret: number): MentionQuery | null
   if (prev && !/[\s([{"'“‘]/.test(prev)) return null;
   const query = before.slice(at + 1);
   if (query.length > 40 || /[\n@]/.test(query) || /^\s/.test(query) || /\s{2,}$/.test(query)) return null;
+  // A completed mention ("@Dev Kumar " + more text) is not a new query, although names contain spaces.
+  if (pickedNames.some((name) => query === `${name} ` || query.startsWith(`${name} `))) return null;
   return { start: at, query };
 }
 

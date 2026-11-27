@@ -382,6 +382,11 @@ isOneToOne: false
               "archived_at": string,"assignee_email": string,"assignee_id": string,"assignee_is_eligible": boolean,"assignee_name": string,"blocked_from_status": Database["public"]['Enums']["work_item_status"],"completed_at": string,"created_at": string,"description": string,"due_date": string,"estimate": number,"id": string,"issue_key": string,"issue_number": number,"parent_id": string,"parent_issue_key": string,"parent_title": string,"parent_type": Database["public"]['Enums']["work_item_type"],"priority": Database["public"]['Enums']["project_priority"],"project_id": string,"reporter_id": string,"reporter_name": string,"start_date": string,"status": Database["public"]['Enums']["work_item_status"],"title": string,"type": Database["public"]['Enums']["work_item_type"],"updated_at": string
             }[]
                            },
+"get_work_item_comments":
+{ Args: { "p_ids": (string)[],"p_work_item_id": string }; Returns: {
+              "author_avatar_kind": string,"author_avatar_symbol": string,"author_id": string,"author_name": string,"body": string,"created_at": string,"deleted_at": string,"edited_at": string,"id": string,"mentions": Json,"parent_comment_id": string,"reply_count": number,"work_item_id": string
+            }[]
+                           },
 "list_assignable_developers":
 { Args: { "p_limit"?: number,"p_project_id": string,"p_search"?: string }; Returns: {
               "email": string,"full_name": string,"id": string
