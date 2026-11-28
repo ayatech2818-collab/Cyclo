@@ -35,7 +35,7 @@ function Logo({ inverted = false }: { inverted?: boolean }) {
     <div className="flex items-center gap-2.5">
       <span className={inverted
         ? "flex size-9 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25"
-        : "flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground"}
+        : "flex size-9 items-center justify-center rounded-xl bg-action text-primary-foreground"}
       >
         <Orbit aria-hidden="true" className="size-5" strokeWidth={2} />
       </span>

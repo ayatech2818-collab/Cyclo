@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { secondaryButton } from "@/components/ui/styles";
 import { PreferencesForm } from "@/features/notifications/components/preferences-form";
 import { getNotificationPreferences } from "@/features/notifications/queries.server";
 import { PROJECT_ERROR_MESSAGES } from "@/features/projects/errors";
@@ -22,7 +23,7 @@ export default async function NotificationSettingsPage() {
         <p className="text-sm text-text-secondary">Choose what CYCLO notifies you about. Turning a type off stops new notifications of that type; existing ones stay.</p>
       </header>
       {preferences.error ? (
-        <StatePanel tone="danger" icon={AlertTriangle} title="Couldn’t load your settings" description={PROJECT_ERROR_MESSAGES[preferences.error]}
+        <EmptyState tone="danger" icon={AlertTriangle} title="Couldn’t load your settings" description={PROJECT_ERROR_MESSAGES[preferences.error]}
           action={<Link href="/notifications/settings" className={secondaryButton}>Try again</Link>} />
       ) : (
         <PreferencesForm initial={preferences.data} />

@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { requireActiveProfile } from "@/features/auth/server";
-import { ProjectHeader, ProjectLoadError, ProjectManagerIdentity } from "@/features/projects/components/project-header";
+import { ProjectHeader, ProjectLoadError } from "@/features/projects/components/project-header";
+import { DetailsCard, OverviewStats, RecentActivity, SprintCard, TeamCard, WorkBreakdown } from "@/features/projects/components/project-overview";
 import { ArchiveControl, AssignManagerForm } from "@/features/projects/components/project-manage";
 import { card } from "@/features/projects/components/styles";
-import { formatProjectDate } from "@/features/projects/format";
+import { loadProjectOverview } from "@/features/projects/overview.server";
 import { loadProjectForPage } from "@/features/projects/page-errors.server";
 import { getProject, listProjectManagerOptions } from "@/features/projects/queries.server";
 import { canAssignProjectManager, canManageProject, isUuid } from "@/features/projects/validation";
@@ -13,15 +14,6 @@ import { cn } from "@/lib/utils/cn";
 
 // Same title for every project and for missing ones: existence is not disclosed.
 export const metadata: Metadata = { title: "Project | CYCLO" };
-
-function DetailRow({ term, children }: { term: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5 py-3 sm:flex-row sm:items-baseline sm:gap-4">
-      <dt className="w-32 shrink-0 text-sm text-text-secondary">{term}</dt>
-      <dd className="text-sm font-medium">{children}</dd>
-    </div>
-  );
-}
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { profile } = await requireActiveProfile();
@@ -37,42 +29,29 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const canManage = canManageProject(profile, project);
   const canAssign = canAssignProjectManager(profile.role);
   const archived = Boolean(project.archivedAt);
+  const today = new Date().toISOString().slice(0, 10);
   // Decorative for the reassign form; a failure leaves the form disabled.
-  const managerOptions = canAssign ? await listProjectManagerOptions().catch(() => null) : null;
+  const [managerOptions, overview] = await Promise.all([
+    canAssign ? listProjectManagerOptions().catch(() => null) : Promise.resolve(null),
+    loadProjectOverview(project.id),
+  ]);
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto w-full max-w-[88rem] space-y-6 px-4 py-6 sm:px-6 lg:py-8">
       <ProjectHeader project={project} canManage={canManage} current="overview" />
+      <OverviewStats project={project} data={overview} />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-6">
-          <section className={cn(card, "p-5 sm:p-6")} aria-labelledby="project-about">
-            <h2 id="project-about" className="text-base font-semibold">About</h2>
-            {project.description ? (
-              <p className="mt-3 text-sm leading-relaxed whitespace-pre-line text-text-secondary">{project.description}</p>
-            ) : (
-              <p className="mt-3 text-sm text-text-muted">No description has been added yet.</p>
-            )}
-          </section>
-
-          <section className={cn(card, "p-5 sm:p-6")} aria-labelledby="project-details">
-            <h2 id="project-details" className="text-base font-semibold">Details</h2>
-            <dl className="mt-2 divide-y divide-border">
-              <DetailRow term="Start date">{formatProjectDate(project.startDate) ?? <span className="font-normal text-text-muted">Not set</span>}</DetailRow>
-              <DetailRow term="Target date">{formatProjectDate(project.targetDate) ?? <span className="font-normal text-text-muted">Not set</span>}</DetailRow>
-              <DetailRow term="Created">
-                {formatProjectDate(project.createdAt)}
-                {project.createdByName && <span className="font-normal text-text-secondary"> by {project.createdByName}</span>}
-              </DetailRow>
-              <DetailRow term="Last updated">{formatProjectDate(project.updatedAt)}</DetailRow>
-            </dl>
-          </section>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0 space-y-6">
+          <div className="grid gap-6 2xl:grid-cols-2">
+            <SprintCard project={project} data={overview} today={today} />
+            <WorkBreakdown project={project} data={overview} />
+          </div>
+          <RecentActivity project={project} data={overview} />
         </div>
 
-        <aside className="space-y-6">
-          <section className={cn(card, "p-5")} aria-labelledby="project-manager">
-            <h2 id="project-manager" className="mb-3 text-sm font-semibold text-text-secondary">Project Manager</h2>
-            <ProjectManagerIdentity project={project} canAssign={canAssign} />
+        <aside className="grid content-start gap-6 md:grid-cols-2 lg:grid-cols-1" aria-label="Project information">
+          <TeamCard project={project} data={overview}>
             {canAssign && (
               <div className="mt-4 border-t border-border pt-4">
                 {archived ? (
@@ -84,11 +63,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                 )}
               </div>
             )}
-          </section>
+          </TeamCard>
+          <DetailsCard project={project} />
 
           {canManage && (
             <section className={cn(card, "p-5")} aria-labelledby="project-lifecycle">
-              <h2 id="project-lifecycle" className="text-sm font-semibold text-text-secondary">{archived ? "Restore" : "Archive"}</h2>
+              <h2 id="project-lifecycle" className="text-[15px] font-semibold">{archived ? "Restore project" : "Archive project"}</h2>
               <p className="mt-1 mb-4 text-xs text-text-secondary">
                 {archived ? "Make this project active and editable again." : "Projects are never deleted. Archive projects that are no longer in use."}
               </p>

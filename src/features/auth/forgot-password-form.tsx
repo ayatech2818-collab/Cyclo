@@ -82,7 +82,7 @@ export function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={pending || !looksLikeEmail(email)}
-        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-action px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? <><LoaderCircle aria-hidden="true" className="size-4 animate-spin" />Sending…</> : "Send reset link"}
       </button>

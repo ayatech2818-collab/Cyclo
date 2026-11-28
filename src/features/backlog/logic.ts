@@ -262,3 +262,8 @@ export function formatPoints(value: number | null): string {
   if (value === null) return "0";
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
+
+/** How many of the panel filters (everything except search and grouping) are set (Phase 8H Part 4). */
+export function panelFilterCount(query: BacklogQuery): number {
+  return [query.type, query.status, query.priority, query.assignee.kind !== "any", query.epic.kind !== "any", query.includeCompleted].filter(Boolean).length;
+}

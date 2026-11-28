@@ -11,16 +11,16 @@ import { actorLabel, describeNotification, notificationDetail, notificationHref,
 
 const EVENT_STYLE: Record<NotificationEvent, { icon: LucideIcon; tone: string }> = {
   MENTIONED: { icon: AtSign, tone: "bg-accent text-accent-foreground" },
-  COMMENT_REPLY: { icon: CornerDownRight, tone: "bg-primary text-primary-foreground" },
-  COMMENT_ADDED: { icon: MessageSquare, tone: "bg-primary text-primary-foreground" },
-  REPLY_ADDED: { icon: CornerDownRight, tone: "bg-primary text-primary-foreground" },
+  COMMENT_REPLY: { icon: CornerDownRight, tone: "bg-action text-primary-foreground" },
+  COMMENT_ADDED: { icon: MessageSquare, tone: "bg-action text-primary-foreground" },
+  REPLY_ADDED: { icon: CornerDownRight, tone: "bg-action text-primary-foreground" },
   WORK_ITEM_ASSIGNED: { icon: UserCheck, tone: "bg-accent text-accent-foreground" },
-  REVIEW_REQUESTED: { icon: SendHorizontal, tone: "bg-primary text-primary-foreground" },
+  REVIEW_REQUESTED: { icon: SendHorizontal, tone: "bg-action text-primary-foreground" },
   REVIEW_APPROVED: { icon: BadgeCheck, tone: "bg-success text-surface" },
   REVIEW_CHANGES_REQUESTED: { icon: RotateCcw, tone: "bg-warning text-surface" },
   WORK_ITEM_BLOCKED: { icon: OctagonAlert, tone: "bg-danger text-danger-foreground" },
   WORK_ITEM_RESUMED: { icon: StepForward, tone: "bg-success text-surface" },
-  PROJECT_MEMBER_ADDED: { icon: FolderPlus, tone: "bg-primary text-primary-foreground" },
+  PROJECT_MEMBER_ADDED: { icon: FolderPlus, tone: "bg-action text-primary-foreground" },
   PROJECT_MANAGER_ASSIGNED: { icon: UserCog, tone: "bg-accent text-accent-foreground" },
 };
 

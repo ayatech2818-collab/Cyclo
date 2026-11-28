@@ -4,7 +4,7 @@ import { AlertTriangle } from "lucide-react";
 
 import { EmployeeAvatar } from "@/features/employees/components/employee-avatar";
 import { EmployeeStatusBadge, RoleBadge } from "@/features/employees/components/employee-badges";
-import { StatePanel } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
 import { EMPLOYEE_ERROR_MESSAGES } from "@/features/employees/errors";
 import { displayName, safeAvatarUrl } from "@/features/employees/format";
 import { loadForPage } from "@/features/employees/page-errors.server";
@@ -40,7 +40,7 @@ export default async function ProfilePage() {
   if (result.error) {
     return (
       <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-        <StatePanel tone="danger" icon={AlertTriangle} title="Couldn’t load your profile" description={EMPLOYEE_ERROR_MESSAGES[result.error]} />
+        <EmptyState tone="danger" icon={AlertTriangle} title="Couldn’t load your profile" description={EMPLOYEE_ERROR_MESSAGES[result.error]} />
       </main>
     );
   }

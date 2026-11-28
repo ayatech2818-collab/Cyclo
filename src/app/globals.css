@@ -18,27 +18,38 @@
 :root {
   color-scheme: light;
 
-  --background: #f6f7f9;
+  --background: #f5f5f4;
   --surface: #ffffff;
-  --surface-muted: #f1f3f6;
-  --border: #e3e6eb;
-  --border-strong: #cbd2dc;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
+  --surface-muted: #f4f4f3;
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
+  --text-primary: #1c1917;
+  --text-secondary: #57534e;
+  --text-muted: #6b6560;
 
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
+  /* Brand (Part 1 identity): orange is the primary; purple complements it. */
+  --primary: #ea580c;
+  --primary-hover: #c2410c;
   --primary-foreground: #ffffff;
-  --ring: #6366f1;
+  /* Orange used as text or a selected label on light surfaces (AA on white). */
+  --primary-strong: #c2410c;
+  --primary-soft: #fff7ed;
+  /* Solid orange fills behind white text: #C2410C keeps small text above 4.5:1. */
+  --action: #c2410c;
+  --action-hover: #9a3412;
+  --ring: #ea580c;
 
-  /* Orange accent: highlights only (keys, emphasis); never primary actions. */
-  --accent: #c2410c;
+  /* Purple: secondary actions, accents and visualizations. */
+  --accent: #7c3aed;
   --accent-foreground: #ffffff;
+  --accent-deep: #4c1d95;
 
-  /* Burndown: actual (orange) vs ideal reference line (dashed gray). */
-  --chart-actual: #c2410c;
-  --chart-ideal: #64748b;
+  /* Informational blue, used for "in progress" so it stays distinct from the brand. */
+  --info: #2563eb;
+
+  /* Burndown: actual (brand orange) vs ideal reference line (dashed gray). */
+  --chart-actual: #ea580c;
+  --chart-ideal: #78716c;
 
   --success: #047857;
   --warning: #b45309;
@@ -46,10 +57,14 @@
   --danger-hover: #b91c1c;
   --danger-foreground: #ffffff;
 
-  /* Brand panel (login) — deep indigo in both themes. */
-  --brand-from: #312e81;
-  --brand-via: #4338ca;
-  --brand-to: #6d28d9;
+  /* Brand panel (login): deep purple to deep orange. */
+  --brand-from: #2e1065;
+  --brand-via: #4c1d95;
+  --brand-to: #9a3412;
+
+  /* Strong neutral (segmented controls, emphasis). */
+  --ink: #1c1917;
+  --ink-foreground: #ffffff;
 
   --shadow-sm-value: 0 1px 2px rgb(15 23 42 / 0.05), 0 1px 3px rgb(15 23 42 / 0.04);
   --shadow-lg-value: 0 12px 32px -12px rgb(15 23 42 / 0.18);
@@ -63,35 +78,45 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --background: #0a0c10;
-  --surface: #12151b;
-  --surface-muted: #191d25;
-  --border: #262b35;
-  --border-strong: #353c49;
-  --text-primary: #e8ebf0;
-  --text-secondary: #a1a9b8;
-  --text-muted: #7f8899;
+  --background: #0c0a09;
+  --surface: #151311;
+  --surface-muted: #1c1a18;
+  --border: #2a2724;
+  --border-strong: #3a3632;
+  --text-primary: #ece9e6;
+  --text-secondary: #a8a29e;
+  --text-muted: #8a847e;
 
-  --primary: #8b8cf8;
-  --primary-hover: #a5a6fb;
-  --primary-foreground: #0a0c10;
-  --ring: #8b8cf8;
+  --primary: #fb923c;
+  --primary-hover: #fdba74;
+  --primary-foreground: #0c0a09;
+  --primary-strong: #fdba74;
+  --primary-soft: #2a1608;
+  --action: #fb923c;
+  --action-hover: #fdba74;
+  --ring: #fb923c;
 
-  --accent: #fb923c;
-  --accent-foreground: #0a0c10;
+  --accent: #a78bfa;
+  --accent-foreground: #0c0a09;
+  --accent-deep: #c4b5fd;
 
-  --chart-actual: #ea580c;
-  --chart-ideal: #7f8899;
+  --info: #60a5fa;
+
+  --chart-actual: #fb923c;
+  --chart-ideal: #8a847e;
 
   --success: #34d399;
   --warning: #fbbf24;
   --danger: #f87171;
   --danger-hover: #fca5a5;
-  --danger-foreground: #0a0c10;
+  --danger-foreground: #0c0a09;
 
-  --brand-from: #1e1b4b;
-  --brand-via: #312e81;
-  --brand-to: #4c1d95;
+  --brand-from: #1e0b3e;
+  --brand-via: #2e1065;
+  --brand-to: #7c2d12;
+
+  --ink: #ece9e6;
+  --ink-foreground: #0c0a09;
 
   --shadow-sm-value: 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-lg-value: 0 16px 40px -12px rgb(0 0 0 / 0.6);
@@ -101,35 +126,45 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --background: #0a0c10;
-    --surface: #12151b;
-    --surface-muted: #191d25;
-    --border: #262b35;
-    --border-strong: #353c49;
-    --text-primary: #e8ebf0;
-    --text-secondary: #a1a9b8;
-    --text-muted: #7f8899;
+    --background: #0c0a09;
+    --surface: #151311;
+    --surface-muted: #1c1a18;
+    --border: #2a2724;
+    --border-strong: #3a3632;
+    --text-primary: #ece9e6;
+    --text-secondary: #a8a29e;
+    --text-muted: #8a847e;
 
-    --primary: #8b8cf8;
-    --primary-hover: #a5a6fb;
-    --primary-foreground: #0a0c10;
-    --ring: #8b8cf8;
+    --primary: #fb923c;
+    --primary-hover: #fdba74;
+    --primary-foreground: #0c0a09;
+    --primary-strong: #fdba74;
+    --primary-soft: #2a1608;
+    --action: #fb923c;
+    --action-hover: #fdba74;
+    --ring: #fb923c;
 
-  --accent: #fb923c;
-  --accent-foreground: #0a0c10;
+    --accent: #a78bfa;
+    --accent-foreground: #0c0a09;
+    --accent-deep: #c4b5fd;
 
-  --chart-actual: #ea580c;
-  --chart-ideal: #7f8899;
+    --info: #60a5fa;
+
+    --chart-actual: #fb923c;
+    --chart-ideal: #8a847e;
 
     --success: #34d399;
     --warning: #fbbf24;
     --danger: #f87171;
     --danger-hover: #fca5a5;
-    --danger-foreground: #0a0c10;
+    --danger-foreground: #0c0a09;
 
-    --brand-from: #1e1b4b;
-    --brand-via: #312e81;
-    --brand-to: #4c1d95;
+    --brand-from: #1e0b3e;
+    --brand-via: #2e1065;
+    --brand-to: #7c2d12;
+
+    --ink: #ece9e6;
+    --ink-foreground: #0c0a09;
 
     --shadow-sm-value: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-lg-value: 0 16px 40px -12px rgb(0 0 0 / 0.6);
@@ -161,23 +196,56 @@
   --color-brand-from: var(--brand-from);
   --color-brand-via: var(--brand-via);
   --color-brand-to: var(--brand-to);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-accent-deep: var(--accent-deep);
+  --color-info: var(--info);
+
+  /*
+   * Workflow status roles (Phase 8H). One place decides the colour of each
+   * state, so badges, board columns and charts cannot drift apart.
+   */
+  --color-status-backlog: var(--text-muted);
+  --color-status-todo: var(--text-secondary);
+  --color-status-progress: var(--info);
+  --color-status-review: var(--accent);
+  --color-status-blocked: var(--danger);
+  --color-status-done: var(--success);
+
+  /* Inter (next/font, self-hosted at build time) with the previous system stack as fallback. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 
   --shadow-sm: var(--shadow-sm-value);
   --shadow-lg: var(--shadow-lg-value);
 }
 
+/*
+ * Scales (Phase 8H design system). Everything sits on the 4 px spacing grid.
+ *
+ *   Type roles (standard Tailwind sizes, so tailwind-merge keeps working):
+ *     display text-3xl/semibold · title text-xl/semibold · heading text-base/semibold
+ *     body text-sm · label text-sm/medium · caption text-xs · group label text-[11px] uppercase
+ *   Control heights: sm h-8 (32) · md h-9 (36, default) · lg h-10 (40); ≥ 40 hit area on touch.
+ *   Radius by role: sm controls inside dense rows · md inputs, nav items, menus ·
+ *     lg cards and rows · xl panels, sidebar, dialogs · full buttons, badges, avatars.
+ *   Elevation: page canvas · panel (border + shadow-sm) · overlay (shadow-lg).
+ *   Motion: duration-100 hover · duration-200 menus · duration-300 drawers; all off under reduced motion.
+ */
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 
   --spacing: 0.25rem;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
 }
 
 @layer base {

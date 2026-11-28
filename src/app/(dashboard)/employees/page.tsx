@@ -7,7 +7,8 @@ import { getRequestAccess, requireActiveProfile } from "@/features/auth/server";
 import { EmployeeFilters } from "@/features/employees/components/employee-filters";
 import { EmployeeTable } from "@/features/employees/components/employee-table";
 import { Pagination } from "@/features/employees/components/pagination";
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { secondaryButton } from "@/components/ui/styles";
 import { EMPLOYEE_ERROR_MESSAGES } from "@/features/employees/errors";
 import { loadForPage } from "@/features/employees/page-errors.server";
 import { listEmployees } from "@/features/employees/queries.server";
@@ -34,7 +35,7 @@ export default async function EmployeesPage({ searchParams }: {
   let body;
   if (result.error) {
     body = (
-      <StatePanel
+      <EmptyState
         tone="danger"
         icon={AlertTriangle}
         title="Couldn’t load employees"
@@ -52,7 +53,7 @@ export default async function EmployeesPage({ searchParams }: {
     );
   } else if (result.data.total > 0) {
     body = (
-      <StatePanel
+      <EmptyState
         icon={SearchX}
         title="This page is out of range"
         description={`There are ${result.data.pageCount} page${result.data.pageCount === 1 ? "" : "s"} of results.`}
@@ -61,7 +62,7 @@ export default async function EmployeesPage({ searchParams }: {
     );
   } else if (hasActiveFilters(query)) {
     body = (
-      <StatePanel
+      <EmptyState
         icon={SearchX}
         title="No matching employees"
         description="Try a different name, email or employee code, or clear the filters."
@@ -69,7 +70,7 @@ export default async function EmployeesPage({ searchParams }: {
       />
     );
   } else {
-    body = <StatePanel icon={Users} title="No employees yet" description="Employees appear here once they have been added to CYCLO." />;
+    body = <EmptyState icon={Users} title="No employees yet" description="Employees appear here once they have been added to CYCLO." />;
   }
 
   return (
@@ -82,7 +83,7 @@ export default async function EmployeesPage({ searchParams }: {
             : "Search the employee directory."}
         </p>
       </div>
-      {profile.role === "SUPER_ADMIN" && <Link href="/employees/invitations" className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover">Invite Employee · Manage invitations</Link>}
+      {profile.role === "SUPER_ADMIN" && <Link href="/employees/invitations" className="inline-flex rounded-md bg-action px-4 py-2 text-sm font-medium text-white hover:bg-action-hover">Invite Employee · Manage invitations</Link>}
       <EmployeeFilters query={query} />
       {body}
     </main>

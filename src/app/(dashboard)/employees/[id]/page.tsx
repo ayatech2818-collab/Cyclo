@@ -5,7 +5,8 @@ import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 import { getRequestAccess, requireActiveProfile } from "@/features/auth/server";
 import { EmployeeAdminFields, EmployeeDirectoryFields, EmployeeHeader } from "@/features/employees/components/employee-details";
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { secondaryButton } from "@/components/ui/styles";
 import { EMPLOYEE_ERROR_MESSAGES } from "@/features/employees/errors";
 import { loadForPage } from "@/features/employees/page-errors.server";
 import { adminGetEmployee, getEmployee } from "@/features/employees/queries.server";
@@ -45,7 +46,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
     return (
       <main className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 sm:px-6">
         {back}
-        <StatePanel
+        <EmptyState
           tone="danger"
           icon={AlertTriangle}
           title="Couldn’t load this employee"

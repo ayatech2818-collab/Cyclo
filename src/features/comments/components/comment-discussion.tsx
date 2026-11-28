@@ -245,7 +245,7 @@ export function CommentDiscussion({ workItemId, initialPage, viewer, canWrite }:
 
       {threads.length === 0 ? (
         <div className="flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-8 text-center">
-          <span className="mb-3 rounded-full bg-primary/10 p-2.5 text-primary"><MessageSquare aria-hidden="true" className="size-5" /></span>
+          <span className="mb-3 rounded-full bg-primary-soft p-2.5 text-primary-strong"><MessageSquare aria-hidden="true" className="size-5" /></span>
           <p className="text-sm font-medium">No comments yet</p>
           <p className="mt-1 max-w-xs text-xs text-text-secondary">
             {canWrite ? "Start the discussion: ask a question, share progress or @mention a teammate." : "This work item is read-only."}
@@ -271,7 +271,7 @@ export function CommentDiscussion({ workItemId, initialPage, viewer, canWrite }:
                   )}
                   {thread.repliesCursor && (
                     <button type="button" disabled={loading} onClick={() => loadReplies(thread)}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline disabled:opacity-60">
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-strong hover:underline disabled:opacity-60">
                       <CornerDownRight aria-hidden="true" className="size-3.5" />
                       Show {thread.comment.replyCount - thread.replies.length} more {thread.comment.replyCount - thread.replies.length === 1 ? "reply" : "replies"}
                     </button>
@@ -289,7 +289,7 @@ export function CommentDiscussion({ workItemId, initialPage, viewer, canWrite }:
 
       {cursor && (
         <button type="button" onClick={loadMore} disabled={loading}
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-border bg-surface text-sm font-medium hover:bg-surface-muted disabled:opacity-60">
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-border bg-surface text-sm font-medium hover:bg-surface-muted disabled:opacity-60">
           {loading && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
           Load more comments
         </button>
@@ -346,7 +346,7 @@ function CommentItem({ comment, viewer, now, timeZone, canWrite, workItemId, com
       <div className="min-w-0 flex-1">
         <header className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span className="text-sm font-semibold">{name}</span>
-          {own && <span className="rounded bg-primary/10 px-1.5 text-[0.65rem] font-semibold text-primary uppercase">You</span>}
+          {own && <span className="rounded-full bg-primary-soft px-1.5 text-[0.65rem] font-semibold text-primary-strong uppercase">You</span>}
           <time dateTime={comment.createdAt} title={formatActivityDateTime(comment.createdAt, timeZone)} className="text-xs text-text-muted">
             {pending ? "Sending…" : relative ?? `${formatActivityDateTime(comment.createdAt, timeZone)}${timeZone === "UTC" ? " UTC" : ""}`}
           </time>
@@ -374,12 +374,12 @@ function CommentItem({ comment, viewer, now, timeZone, canWrite, workItemId, com
               onCancel={() => { setEditing(false); setRetry(null); }} />
           </div>
         ) : (
-          <p className="mt-0.5 text-sm leading-relaxed break-words whitespace-pre-wrap text-text-primary">
+          <p className="mt-1 rounded-2xl rounded-tl-md bg-surface-muted/70 px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap text-text-primary">
             {bodySegments(comment.body ?? "", comment.mentions).map((segment, index) =>
               segment.type === "text" ? (
                 <span key={index}>{segment.text}</span>
               ) : (
-                <span key={index} className={cn("rounded px-1 font-medium", segment.id === viewer.id ? "bg-accent/15 text-accent" : "bg-primary/10 text-primary")}>
+                <span key={index} className={cn("rounded px-1 font-medium", segment.id === viewer.id ? "bg-accent/15 text-accent" : "bg-primary-soft text-primary-strong")}>
                   @{segment.name ?? "unknown"}
                 </span>
               ),

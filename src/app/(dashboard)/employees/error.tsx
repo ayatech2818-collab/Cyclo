@@ -2,13 +2,14 @@
 
 import { AlertTriangle } from "lucide-react";
 
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { secondaryButton } from "@/components/ui/styles";
 
 /** Fallback for unexpected failures. Never shows the error message (it may contain internals). */
 export default function EmployeesError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-      <StatePanel
+      <EmptyState
         tone="danger"
         icon={AlertTriangle}
         title="Something went wrong"

@@ -13,7 +13,7 @@ import { AVATAR_ICON_COMPONENTS } from "../avatar-icons";
 
 const initial: ProfileFormState = { error: null, success: null };
 const input = "mt-2 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm disabled:opacity-60";
-const primaryButton = "inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-60";
+const primaryButton = "inline-flex items-center justify-center gap-2 rounded-md bg-action px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-action-hover disabled:opacity-60";
 const secondaryButton = "inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-60";
 
 function Feedback({ state }: { state: ProfileFormState }) {

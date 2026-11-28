@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, Settings } from "lucide-react";
 
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { secondaryButton } from "@/components/ui/styles";
 import { NotificationsList } from "@/features/notifications/components/notifications-list";
 import { CATEGORY_LABELS, NOTIFICATION_CATEGORIES, notificationsHref, parseNotificationQuery } from "@/features/notifications/logic";
 import { listNotifications } from "@/features/notifications/queries.server";
@@ -51,7 +52,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
       </nav>
 
       {page.error ? (
-        <StatePanel tone="danger" icon={AlertTriangle} title="Couldn’t load notifications" description={PROJECT_ERROR_MESSAGES[page.error]}
+        <EmptyState tone="danger" icon={AlertTriangle} title="Couldn’t load notifications" description={PROJECT_ERROR_MESSAGES[page.error]}
           action={<Link href={notificationsHref(query)} className={secondaryButton}>Try again</Link>} />
       ) : (
         <NotificationsList key={`${query.status}:${query.category ?? ""}`} query={query} initialPage={page.data} />

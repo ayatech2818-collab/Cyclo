@@ -21,7 +21,7 @@ export default async function ResetPasswordPage() {
           This page needs a fresh password-reset link. Reset links work once and must be used soon after they are opened.
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-4">
-          <Link href="/forgot-password" className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover">
+          <Link href="/forgot-password" className="inline-flex h-10 items-center rounded-lg bg-action px-4 text-sm font-semibold text-primary-foreground hover:bg-action-hover">
             Request a new link
           </Link>
           <Link href="/login" className="text-sm font-medium text-primary underline underline-offset-4">Back to sign in</Link>

@@ -72,7 +72,7 @@ export function NotificationBell() {
         <Bell aria-hidden="true" className="size-4.5" />
         {badge && (
           <span key={badge} aria-hidden="true"
-            className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[0.625rem] leading-none font-bold text-accent-foreground ring-2 ring-surface tabular-nums motion-safe:animate-[badge-pop_300ms_ease-out]">
+            className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-action px-1 text-[0.625rem] leading-none font-bold text-primary-foreground ring-2 ring-surface tabular-nums motion-safe:animate-[badge-pop_300ms_ease-out]">
             {badge}
           </span>
         )}

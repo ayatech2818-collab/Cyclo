@@ -4,7 +4,8 @@ import { AlertTriangle, SearchX } from "lucide-react";
 
 import { PagePagination } from "@/components/shared/page-pagination";
 import { requireActiveProfile } from "@/features/auth/server";
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { secondaryButton } from "@/components/ui/styles";
 import { PROJECT_ERROR_MESSAGES } from "@/features/projects/errors";
 import { loadProjectForPage } from "@/features/projects/page-errors.server";
 import { ReviewFilters } from "@/features/reviews/components/review-filters";
@@ -37,7 +38,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
     return (
       <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
         {heading}
-        <StatePanel tone="danger" icon={AlertTriangle} title="Couldn’t load reviews" description={PROJECT_ERROR_MESSAGES[summary.error]}
+        <EmptyState tone="danger" icon={AlertTriangle} title="Couldn’t load reviews" description={PROJECT_ERROR_MESSAGES[summary.error]}
           action={<Link href={reviewsHref(query)} className={secondaryButton}>Try again</Link>} />
       </main>
     );
@@ -46,12 +47,12 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   let body;
   if (list.error) {
     body = (
-      <StatePanel tone="danger" icon={AlertTriangle} title="Couldn’t load the review queue" description={PROJECT_ERROR_MESSAGES[list.error]}
+      <EmptyState tone="danger" icon={AlertTriangle} title="Couldn’t load the review queue" description={PROJECT_ERROR_MESSAGES[list.error]}
         action={<Link href={reviewsHref(query)} className={secondaryButton}>Try again</Link>} />
     );
   } else if (list.data.items.length === 0 && list.data.total > 0) {
     body = (
-      <StatePanel icon={SearchX} title="This page is out of range" description={`There ${list.data.pageCount === 1 ? "is 1 page" : `are ${list.data.pageCount} pages`} of reviews.`}
+      <EmptyState icon={SearchX} title="This page is out of range" description={`There ${list.data.pageCount === 1 ? "is 1 page" : `are ${list.data.pageCount} pages`} of reviews.`}
         action={<Link href={reviewsHref(query, { page: 1 })} className={secondaryButton}>Go to first page</Link>} />
     );
   } else {

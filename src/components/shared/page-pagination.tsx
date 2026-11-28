@@ -42,7 +42,7 @@ export function PagePagination({ page, pageSize, pageCount, total, noun, hrefFor
                 href={hrefFor(entry)}
                 aria-label={`Page ${entry}`}
                 aria-current={entry === page ? "page" : undefined}
-                className={cn(item, entry === page ? "bg-primary text-primary-foreground" : "hidden text-text-primary hover:bg-surface sm:inline-flex")}
+                className={cn(item, entry === page ? "bg-action text-primary-foreground" : "hidden text-text-primary hover:bg-surface sm:inline-flex")}
               >
                 {entry}
               </Link>

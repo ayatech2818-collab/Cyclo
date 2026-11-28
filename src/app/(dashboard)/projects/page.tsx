@@ -3,11 +3,13 @@ import Link from "next/link";
 import { AlertTriangle, Archive, FolderKanban, Plus, SearchX } from "lucide-react";
 
 import { requireActiveProfile } from "@/features/auth/server";
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { cn } from "@/lib/utils/cn";
+import { EmptyState } from "@/components/ui/empty-state";
+
 import { ProjectGrid, ProjectTable } from "@/features/projects/components/project-collection";
-import { ProjectFilters, ProjectScopeBar } from "@/features/projects/components/project-filters";
+import { ProjectFilters, ProjectScopeBar, ProjectStatusChips } from "@/features/projects/components/project-filters";
 import { ProjectPagination } from "@/features/projects/components/project-pagination";
-import { primaryButton } from "@/features/projects/components/styles";
+import { panel, primaryButton, secondaryButton } from "@/components/ui/styles";
 import { PROJECT_ERROR_MESSAGES } from "@/features/projects/errors";
 import { loadProjectForPage } from "@/features/projects/page-errors.server";
 import { listProjects } from "@/features/projects/queries.server";
@@ -22,6 +24,7 @@ export default async function ProjectsPage({ searchParams }: {
   const query = parseProjectListQuery(await searchParams);
   const result = await loadProjectForPage(() => listProjects(query));
   const canCreate = canCreateProjects(profile.role);
+  const today = new Date().toISOString().slice(0, 10);
 
   const newProject = canCreate && (
     <Link href="/projects/new" className={primaryButton}>
@@ -33,7 +36,7 @@ export default async function ProjectsPage({ searchParams }: {
   let body;
   if (result.error) {
     body = (
-      <StatePanel
+      <EmptyState
         tone="danger"
         icon={AlertTriangle}
         title="Couldn’t load projects"
@@ -44,13 +47,13 @@ export default async function ProjectsPage({ searchParams }: {
   } else if (result.data.items.length > 0) {
     body = (
       <div className="space-y-4">
-        {query.view === "list" ? <ProjectTable projects={result.data.items} /> : <ProjectGrid projects={result.data.items} />}
+        {query.view === "list" ? <ProjectTable projects={result.data.items} today={today} /> : <ProjectGrid projects={result.data.items} today={today} />}
         <ProjectPagination query={query} pageCount={result.data.pageCount} total={result.data.total} />
       </div>
     );
   } else if (result.data.total > 0) {
     body = (
-      <StatePanel
+      <EmptyState
         icon={SearchX}
         title="This page is out of range"
         description={`There ${result.data.pageCount === 1 ? "is 1 page" : `are ${result.data.pageCount} pages`} of results.`}
@@ -59,7 +62,7 @@ export default async function ProjectsPage({ searchParams }: {
     );
   } else if (hasActiveFilters(query)) {
     body = (
-      <StatePanel
+      <EmptyState
         icon={SearchX}
         title="No matching projects"
         description="Try a different name or key, or clear the filters."
@@ -67,10 +70,10 @@ export default async function ProjectsPage({ searchParams }: {
       />
     );
   } else if (query.archived) {
-    body = <StatePanel icon={Archive} title="No archived projects" description="Archived projects appear here. Archiving keeps all project data and can be undone." />;
+    body = <EmptyState icon={Archive} title="No archived projects" description="Archived projects appear here. Archiving keeps all project data and can be undone." />;
   } else if (profile.role === "DEVELOPER") {
     body = (
-      <StatePanel
+      <EmptyState
         icon={FolderKanban}
         title="No projects yet"
         description="Projects you are added to will appear here. Ask your Project Manager if you expect to see a project."
@@ -78,7 +81,7 @@ export default async function ProjectsPage({ searchParams }: {
     );
   } else {
     body = (
-      <StatePanel
+      <EmptyState
         icon={FolderKanban}
         title="No projects yet"
         description={profile.role === "SUPER_ADMIN" ? "Create the first project and assign a Project Manager." : "Create a project to get started. You will be its Project Manager."}
@@ -94,17 +97,33 @@ export default async function ProjectsPage({ searchParams }: {
         ? "Projects you manage."
         : "Projects you are a member of.";
 
+  const total = result.error ? null : result.data.total;
+
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto w-full max-w-[88rem] space-y-6 px-4 py-6 sm:px-6 lg:py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
+          <h1 className="flex items-baseline gap-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+            Projects
+            {total !== null && (
+              <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-sm font-medium text-text-secondary tabular-nums">
+                {total}<span className="sr-only"> {query.archived ? "archived" : "active"} {total === 1 ? "project" : "projects"}{hasActiveFilters(query) ? " matching the filters" : ""}</span>
+              </span>
+            )}
+          </h1>
           <p className="mt-1 text-sm text-text-secondary">{subtitle}</p>
         </div>
         {newProject}
       </div>
-      <ProjectScopeBar query={query} />
-      <ProjectFilters query={query} />
+
+      <section aria-label="Find projects" className={cn(panel, "space-y-4 p-4 sm:p-5")}>
+        <ProjectScopeBar query={query} />
+        <ProjectStatusChips query={query} />
+        <div className="border-t border-border pt-4">
+          <ProjectFilters query={query} />
+        </div>
+      </section>
+
       {body}
     </main>
   );

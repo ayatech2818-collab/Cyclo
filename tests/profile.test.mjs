@@ -239,21 +239,25 @@ test("avatar rendering uses only catalog content and safe image sources", () => 
   assert.match(render({ avatarUrl: "http://cdn.test/a.png" }), />AL</);
 });
 
-test("header links to the profile and shows the resolved avatar", () => {
+test("header shows the account menu with the resolved avatar, the bell and the theme toggle", () => {
   const { AppHeader } = loadTsModule("src/components/layout/app-header.tsx", {
     "next/link": { __esModule: true, default: ({ href, children, ...props }) => React.createElement("a", { href, ...props }, children) },
+    "next/navigation": { usePathname: () => "/dashboard" },
     "@/features/auth/actions": { logout: async () => {} },
-    "@/components/theme/theme-toggle": { ThemeToggle: () => null },
+    "@/components/theme/theme-toggle": { ThemeToggle: () => React.createElement("button", { "aria-label": "Theme" }) },
     "@/features/notifications/components/notification-bell": { NotificationBell: () => React.createElement("button", { "aria-label": "Notifications" }) },
-    "./nav-link": { NavLink: ({ href, children }) => React.createElement("a", { href }, children) },
+    "./mobile-nav": { MobileNav: () => React.createElement("button", { "aria-label": "Open navigation" }) },
+    "./page-title": { PageTitle: () => React.createElement("span", null, "Dashboard") },
   });
   const html = renderToStaticMarkup(React.createElement(AppHeader, {
     profile: { id: ID, full_name: "Ada", email: "ada@cyclo.test", role: "DEVELOPER", is_active: true },
     theme: "system",
     avatar: { type: "emoji", id: "rocket" },
   }));
-  assert.match(html, /href="\/profile"/);
+  assert.match(html, /aria-label="Account: Ada"/);
   assert.match(html, /🚀/);
-  assert.doesNotMatch(html, /href="\/employees"/, "developers still get no directory link");
   assert.match(html, /aria-label="Notifications"/, "every employee gets the notification bell");
+  assert.match(html, /aria-label="Theme"/);
+  assert.match(html, /aria-label="Open navigation"/, "phone menu trigger");
+  assert.doesNotMatch(html, /href="\/employees"/, "navigation lives in the sidebar, not the header");
 });

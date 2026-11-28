@@ -5,13 +5,14 @@ import { AlertTriangle, ListTodo, Plus, SearchX } from "lucide-react";
 
 import { PagePagination } from "@/components/shared/page-pagination";
 import { requireActiveProfile } from "@/features/auth/server";
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { panel, primaryButton, secondaryButton } from "@/components/ui/styles";
 import { ProjectHeader, ProjectLoadError } from "@/features/projects/components/project-header";
-import { primaryButton } from "@/features/projects/components/styles";
 import { PROJECT_ERROR_MESSAGES } from "@/features/projects/errors";
 import { loadProjectForPage } from "@/features/projects/page-errors.server";
 import { getProject, listProjectMembers } from "@/features/projects/queries.server";
 import { canManageProject, isUuid } from "@/features/projects/validation";
+import { cn } from "@/lib/utils/cn";
 import { WorkFilters } from "@/features/work-items/components/work-filters";
 import { WorkList } from "@/features/work-items/components/work-list";
 import { listWorkItems } from "@/features/work-items/queries.server";
@@ -57,45 +58,60 @@ export default async function ProjectWorkPage({ params, searchParams }: {
   let body;
   if (list.error) {
     body = (
-      <StatePanel tone="danger" icon={AlertTriangle} title="Couldn’t load work items" description={PROJECT_ERROR_MESSAGES[list.error]}
+      <EmptyState tone="danger" icon={AlertTriangle} title="Couldn’t load work items" description={PROJECT_ERROR_MESSAGES[list.error]}
         action={<Link href={workItemsHref(projectId, query)} className={secondaryButton}>Try again</Link>} />
     );
   } else if (list.data.items.length > 0) {
     body = (
       <div className="space-y-4">
-        <WorkList projectId={projectId} items={list.data.items} />
+        <WorkList projectId={projectId} items={list.data.items} today={new Date().toISOString().slice(0, 10)} />
         <PagePagination page={query.page} pageSize={query.pageSize} pageCount={list.data.pageCount} total={list.data.total}
           noun={{ one: "work item", many: "work items" }} hrefFor={(page) => workItemsHref(projectId, query, { page })} />
       </div>
     );
   } else if (list.data.total > 0) {
     body = (
-      <StatePanel icon={SearchX} title="This page is out of range" description={`There ${list.data.pageCount === 1 ? "is 1 page" : `are ${list.data.pageCount} pages`} of results.`}
+      <EmptyState icon={SearchX} title="This page is out of range" description={`There ${list.data.pageCount === 1 ? "is 1 page" : `are ${list.data.pageCount} pages`} of results.`}
         action={<Link href={workItemsHref(projectId, query, { page: 1 })} className={secondaryButton}>Go to first page</Link>} />
     );
   } else if (hasActiveWorkFilters(query)) {
     body = (
-      <StatePanel icon={SearchX} title="No matching work items" description="Try another search or clear the filters."
+      <EmptyState icon={SearchX} title="No matching work items" description="Try another search or clear the filters."
         action={<Link href={workItemsHref(projectId, { ...query, search: "", type: null, status: null, priority: null, assignee: { kind: "any" }, page: 1 })} className={secondaryButton}>Clear filters</Link>} />
     );
   } else if (query.archived) {
-    body = <StatePanel icon={ListTodo} title="No archived work items" description="Archived work items appear here. Their keys are never reused." />;
+    body = <EmptyState icon={ListTodo} title="No archived work items" description="Archived work items appear here. Their keys are never reused." />;
   } else {
     body = (
-      <StatePanel icon={ListTodo} title="No work items yet"
+      <EmptyState icon={ListTodo} title="No work items yet"
         description={canCreate ? "Create an epic, story, task or bug to start planning this project." : "Work items created for this project will appear here."}
         action={newButton || undefined} />
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+    <main className="mx-auto w-full max-w-[88rem] space-y-6 px-4 py-6 sm:px-6 lg:py-8">
       <ProjectHeader project={project} canManage={canManageProject(profile, project)} current="work" />
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-text-secondary">Epics, stories, tasks, subtasks and bugs for this project.</p>
+
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="flex items-baseline gap-2.5 text-lg font-semibold tracking-tight">
+            Work items
+            {!list.error && (
+              <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-text-secondary tabular-nums">
+                {list.data.total}<span className="sr-only"> {list.data.total === 1 ? "item" : "items"}</span>
+              </span>
+            )}
+          </h2>
+          <p className="mt-0.5 text-sm text-text-secondary">Epics, stories, tasks, subtasks and bugs.</p>
+        </div>
         {newButton}
       </div>
-      <WorkFilters projectId={projectId} query={query} assignees={assignees} selfId={profile.id} />
+
+      <section aria-label="Find work items" className={cn(panel, "p-4 sm:p-5")}>
+        <WorkFilters projectId={projectId} query={query} assignees={assignees} selfId={profile.id} />
+      </section>
+
       {body}
     </main>
   );

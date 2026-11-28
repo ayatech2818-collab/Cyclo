@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 import { getRequestAccess, requireActiveProfile } from "@/features/auth/server";
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { secondaryButton } from "@/components/ui/styles";
 import { CreateProjectForm } from "@/features/projects/components/project-form";
 import { PROJECT_ERROR_MESSAGES } from "@/features/projects/errors";
 import { loadProjectForPage } from "@/features/projects/page-errors.server";
@@ -40,7 +41,7 @@ export default async function NewProjectPage() {
         </p>
       </div>
       {options?.error ? (
-        <StatePanel
+        <EmptyState
           tone="danger"
           icon={AlertTriangle}
           title="Couldn’t load Project Managers"

@@ -1,25 +1,25 @@
 import Link from "next/link";
 import { AlertTriangle, CalendarDays, Target } from "lucide-react";
 
+import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { formatProjectDate } from "@/features/projects/format";
 import { cn } from "@/lib/utils/cn";
 
 import { capacityState, formatPoints, sprintDurationDays } from "../logic";
 import { SPRINT_STATUS_LABELS, type Sprint, type SprintStatus } from "../types";
 
-const STATUS_STYLES: Record<SprintStatus, string> = {
-  PLANNING: "bg-surface-muted text-text-secondary",
-  ACTIVE: "bg-accent/10 text-accent",
-  COMPLETED: "bg-success/10 text-success",
-  CANCELLED: "bg-danger/10 text-danger",
+const STATUS_TONES: Record<SprintStatus, BadgeTone> = {
+  PLANNING: "muted",
+  ACTIVE: "accent",
+  COMPLETED: "success",
+  CANCELLED: "danger",
 };
 
 export function SprintStatusBadge({ status }: { status: SprintStatus }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold", STATUS_STYLES[status])}>
-      {status === "ACTIVE" && <span aria-hidden="true" className="size-1.5 animate-pulse rounded-full bg-accent" />}
+    <Badge tone={STATUS_TONES[status]} dot={status === "ACTIVE"} pulse={status === "ACTIVE"} className="font-semibold">
       {SPRINT_STATUS_LABELS[status]}
-    </span>
+    </Badge>
   );
 }
 

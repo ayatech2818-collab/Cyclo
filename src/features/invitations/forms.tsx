@@ -37,7 +37,7 @@ export function OnboardingForm({ step, fullName = "" }: { step: "password" | "pr
         <label className="block text-sm font-medium">Confirm password<input name="confirmation" type="password" autoComplete="new-password" required minLength={12} maxLength={72} className={input} /></label>
         <p className="text-xs text-text-secondary">Use at least 12 characters, up to 72 UTF-8 bytes.</p>
       </> : <label className="block text-sm font-medium">Full name<input name="fullName" required maxLength={200} defaultValue={fullName} autoComplete="name" className={input} /></label>}
-      <button disabled={pending} className="w-full rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-primary-hover disabled:opacity-60">{pending ? "Saving…" : step === "password" ? "Save password and continue" : "Complete onboarding"}</button>
+      <button disabled={pending} className="w-full rounded-md bg-action px-4 py-2 font-medium text-white hover:bg-action-hover disabled:opacity-60">{pending ? "Saving…" : step === "password" ? "Save password and continue" : "Complete onboarding"}</button>
     </fieldset>
     <div aria-live="polite">{state.error && <p role="alert" className="text-sm text-danger">{state.error}</p>}</div>
   </form>;

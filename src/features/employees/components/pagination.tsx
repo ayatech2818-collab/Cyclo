@@ -42,7 +42,7 @@ export function Pagination({ query, pageCount, total }: { query: EmployeeDirecto
                 aria-current={entry === page ? "page" : undefined}
                 className={cn(
                   item,
-                  entry === page ? "bg-primary text-primary-foreground" : "hidden text-text-primary hover:bg-surface sm:inline-flex",
+                  entry === page ? "bg-action text-primary-foreground" : "hidden text-text-primary hover:bg-surface sm:inline-flex",
                 )}
               >
                 {entry}

@@ -4,7 +4,7 @@ import { CalendarRange, History } from "lucide-react";
 
 import { PagePagination } from "@/components/shared/page-pagination";
 import { requireActiveProfile } from "@/features/auth/server";
-import { StatePanel } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ProjectHeader, ProjectLoadError } from "@/features/projects/components/project-header";
 import { loadProjectForPage } from "@/features/projects/page-errors.server";
 import { getProject } from "@/features/projects/queries.server";
@@ -56,7 +56,7 @@ export default async function ProjectSprintsPage({ params, searchParams }: {
       </div>
 
       {allCount === 0 ? (
-        <StatePanel icon={CalendarRange} title="No sprints yet"
+        <EmptyState icon={CalendarRange} title="No sprints yet"
           description={canPlan ? "Create the first sprint, then add work from the backlog." : "Sprints planned for this project will appear here."} />
       ) : (
         <>

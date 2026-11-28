@@ -4,7 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 import { requireActiveProfile } from "@/features/auth/server";
-import { StatePanel, secondaryButton } from "@/features/employees/components/state-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { secondaryButton } from "@/components/ui/styles";
 import { EditProjectForm } from "@/features/projects/components/project-form";
 import { PROJECT_ERROR_MESSAGES } from "@/features/projects/errors";
 import { loadProjectForPage } from "@/features/projects/page-errors.server";
@@ -22,7 +23,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ pr
   if (result.error) {
     return (
       <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6">
-        <StatePanel
+        <EmptyState
           tone="danger"
           icon={AlertTriangle}
           title="Couldn’t load this project"

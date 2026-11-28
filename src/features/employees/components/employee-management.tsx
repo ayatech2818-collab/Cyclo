@@ -12,7 +12,7 @@ const inputClass = "mt-2 w-full rounded-md border border-border bg-surface px-3 
 const buttonBase = "rounded-md px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60";
 /** "danger" marks actions that remove access (deactivate, revoke), in the form and in its confirmation. */
 const buttonTones = {
-  primary: `${buttonBase} bg-primary text-primary-foreground hover:bg-primary-hover`,
+  primary: `${buttonBase} bg-action text-primary-foreground hover:bg-action-hover`,
   danger: `${buttonBase} bg-danger text-danger-foreground hover:bg-danger-hover`,
 } as const;
 

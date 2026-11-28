@@ -63,7 +63,7 @@ const ICONS: Record<ActivityAction, LucideIcon> = {
 };
 
 const TONE_CLASSES: Record<ActivityTone, string> = {
-  primary: "bg-primary text-primary-foreground",
+  primary: "bg-action text-primary-foreground",
   accent: "bg-accent text-accent-foreground",
   success: "bg-success text-surface",
   warning: "bg-warning text-surface",

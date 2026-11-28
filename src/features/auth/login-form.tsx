@@ -93,7 +93,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
       <button
         type="submit"
         disabled={pending}
-        className="group inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-wait disabled:opacity-70"
+        className="group inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-action px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-action-hover disabled:cursor-wait disabled:opacity-70"
       >
         {pending ? (
           <>
